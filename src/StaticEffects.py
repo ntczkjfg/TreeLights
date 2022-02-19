@@ -1,6 +1,8 @@
-from Common_Variables import rng, tree, C
+from Common_Variables import rng, tree
+from Colors import *
 import numpy as np
 from PIL import Image
+from time import time, sleep
 
 def displayImage(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
@@ -8,7 +10,7 @@ def displayImage(fileName, markTemplate = False):
         img = im.load()
         tree.clear(False)
         for pixel in tree:
-            x = im.size[0] * (pixel.y + 1) / 2
+            x = im.size[0] * (-pixel.x + 1) / 2
             y = im.size[1] - 1 - (im.size[0] * pixel.z / 2)
             if x < 0 or y < 0 or x > im.size[0] - 1 or y > im.size[1] - 1:
                 continue
@@ -23,7 +25,7 @@ def displayImage(fileName, markTemplate = False):
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
 
-def gradient(colors = C["COLORS"], variant = None, backwards = False):
+def gradient(colors = COLORS, variant = None, backwards = False):
     if colors == None:
         color1 = rng.integers(0, 256, 3)
         color2 = rng.integers(0, 256, 3)
@@ -33,7 +35,7 @@ def gradient(colors = C["COLORS"], variant = None, backwards = False):
             return
         color1, color2 = rng.choice(colors, 2, False)
     speed = 10
-    if variant == None: variant = rng.integers(2, 5)
+    if variant == None: variant = rng.integers(3, 5)
     index = tree.indices[variant]
     greenDiff = (color2[0] - color1[0])/(tree.LED_COUNT - 1)*2
     redDiff = (color2[1] - color1[1])/(tree.LED_COUNT - 1)*2
@@ -55,9 +57,9 @@ def pokeball():
     for pixel in tree:
         if (pixel.x**2 + pixel.y**2 + (pixel.z-height)**2)**.5 < radius**2:
             if pixel.z > height:
-                pixel.setColor(C["RED"])
+                pixel.setColor(RED)
             else:
-                pixel.setColor(C["WHITE"])
+                pixel.setColor(WHITE)
     tree.show()
 
 def rainbow(variant = None, cycle = True):
@@ -89,23 +91,6 @@ def rainbow(variant = None, cycle = True):
     tree.show()
     if cycle: tree.cycle(variant, step = speed)
 
-def rotate2(colors = [C["BLUE"], C["YELLOW"]]):
-    if colors == None:
-        color1 = rng.integers(0, 256, 3)
-        color2 = rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) == list and len(colors) == 2:
-            color1 = C[0]
-            color2 = C[1]
-        else:
-            print("Must give exactly two colors for this effect")
-            return
-    speed = 10
-    for pixel in tree:
-        pixel.setColor(color1) if pixel.y > 0 else pixel.setColor(color2)
-    tree.show()
-    tree.cycle(4, step = speed)
-
 def setAll(colors = None):
     if colors == None:
         color = rng.integers(0, 256, 3)
@@ -116,7 +101,7 @@ def setAll(colors = None):
     tree.fill(color)
     tree.show()
 
-def setAllRandom(colors = None):
+def setAllRandom(colors = None, continuous = True):
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
     else:
@@ -126,6 +111,10 @@ def setAllRandom(colors = None):
     for pixel in tree:
         pixel.setColor(Color())
     tree.show()
+    while continuous:
+        tree[rng.integers(0, tree.LED_COUNT)].setColor(Color())
+        tree.show()
+        #sleep(0.1)
 
 def setPixel(index, colors = None):
     if colors == None:

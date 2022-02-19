@@ -1,0 +1,22 @@
+# Simply pre-defined GRB colors, plus lists of colors that work well together
+
+RED = [0, 255, 0]
+ORANGE = [50, 255, 0]
+YELLOW = [200, 255, 0]
+GREEN = [255, 0, 0]
+AQUA = [238, 40, 95]
+CYAN = [255, 0, 255]
+BLUE = [0, 0, 255]
+PURPLE = [0, 128, 255]
+PINK = [20, 255, 100]
+
+WHITE = [255, 255, 255]
+BLACK = [0, 0, 0]
+ON = [255, 255, 255]
+OFF = [0, 0, 0]
+DIM = [6, 6, 6]
+
+COLORS = [WHITE, RED, ORANGE, YELLOW, GREEN, AQUA, CYAN, BLUE, PURPLE, PINK]
+TREECOLORS = [RED, RED, GREEN, GREEN, YELLOW, BLUE]
+TREECOLORS2 = [PINK, PINK, RED, GREEN, GREEN, YELLOW, BLUE]
+RAINBOW = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK]

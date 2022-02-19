@@ -12,7 +12,7 @@ class Tree:
     def __init__(self, coordinates):
         self.LEDs = neopixel.NeoPixel(LED_PIN, len(coordinates), auto_write = False)
         self.LED_COUNT = len(coordinates)
-        self.brightness = 0.4 # ∈(0, 1]
+        self.brightness = 1 # ∈(0, 1]
         self.xMin = 1000
         self.xMax = 0
         self.yMin = 1000
@@ -20,6 +20,7 @@ class Tree:
         self.zMin = 1000
         self.zMax = 0
         self.pixels = []
+        self.coordinates = []
         totalDist = 0
         for i, coordinate in enumerate(coordinates):
             if i != self.LED_COUNT - 1:
@@ -27,12 +28,14 @@ class Tree:
                               (coordinates[i][1] - coordinates[i+1][1])**2 +
                               (coordinates[i][2] - coordinates[i+1][2])**2)**0.5
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
+            self.coordinates.append(coordinate)
             if self.pixels[i].x < self.xMin: self.xMin = self.pixels[i].x
             if self.pixels[i].y < self.yMin: self.yMin = self.pixels[i].y
             if self.pixels[i].z < self.zMin: self.zMin = self.pixels[i].z
             if self.pixels[i].x > self.xMax: self.xMax = self.pixels[i].x
             if self.pixels[i].y > self.yMax: self.yMax = self.pixels[i].y
             if self.pixels[i].z > self.zMax: self.zMax = self.pixels[i].z
+        self.coordinates = np.array(self.coordinates)
         avgDist = totalDist / (self.LED_COUNT - 1)
         self.xRange = self.xMax - self.xMin
         self.yRange = self.yMax - self.yMin
@@ -66,13 +69,13 @@ class Tree:
                         self[i].neighbors.append(pixel.index)
                         continue
                     d = ((self[i].x - pixel.x)**2 + (self[i].y - pixel.y)**2 + (self[i].z - pixel.z)**2)**0.5
-                    if d < 1.1*avgDist:
+                    if d < 0.9*avgDist:
                         self[i].neighbors.append(pixel.index)
             self.pixels[self.sortedX[i]].xIndex = i
             self.pixels[self.sortedY[i]].yindex = i
             self.pixels[self.sortedZ[i]].zIndex = i
             self.pixels[self.sortedA[i]].aIndex = i
-            if self.pixels[i].r - 0.6 * (m * self.pixels[i].z + b) > 0:
+            if self.pixels[i].r - 0.9 * (m * self.pixels[i].z + b) > 0:
                 self.pixels[i].surface = True
     
     # This function exists because pickling the tree fails with a RecursionError exception if the neighbors
@@ -200,7 +203,7 @@ class Pixel():
         self.z = self.coordinate[2]
         self.a = np.arctan(self.y/self.x)# Angles between -π/2 and π/2
         if self.x < 0: self.a += np.pi # Angles between -π/2 and 3π/2
-        self.a = (self.a + np.pi / 2) % (2 * np.pi) # Angles between 0 and 2π
+        self.a = self.a % (2 * np.pi) # Angles between 0 and 2π
         self.r = (self.x**2 + self.y**2)**0.5
         self.color = [0, 0, 0]
         self.xIndex = -1
