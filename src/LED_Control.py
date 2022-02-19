@@ -26,7 +26,7 @@ tree.clear()
 # Falling leaves
 # Jack-o-lantern?
 
-def zSpiral(twists = 5, sections = 100):
+def zSpiral(twists = 4, sections = 110):
     angle = 0
     deltaA = 2 * np.pi * twists / sections
     
