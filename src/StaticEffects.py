@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from time import time, sleep
 
+# Displays images
 def displayImage(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
     with Image.open(PATH) as im:
@@ -25,7 +26,32 @@ def displayImage(fileName, markTemplate = False):
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
 
-def gradient(colors = COLORS, variant = None, backwards = False):
+# Displays images, but with perspective
+def displayImage2(fileName, markTemplate = False):
+    PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
+    eye = np.array([0, 4.5, 2.2])
+    with Image.open(PATH) as im:
+        img = im.load()
+        tree.clear(False)
+        for pixel in tree:
+            vect = eye - pixel.coordinate
+            t = -eye[1] / vect[1]
+            x = (-(vect[0]*t + eye[0]) + 1) * im.size[0]/2
+            y = im.size[1] - (vect[2]*t + eye[2])*im.size[1]/tree.zMax
+            if x < 0 or y < 0 or x > im.size[0] - 1 or y > im.size[1] - 1:
+                continue
+            if markTemplate:
+                im.putpixel((int(x), int(y)), (0, 0, 0, 255))
+            else:
+                color = list(img[x, y][0:3])
+                color[0], color[1] = color[1], color[0]
+                if color != [28, 237, 36]:
+                    pixel.setColor(color)
+        if markTemplate:
+            im.save(PATH[:-4] + "_marked.png")
+    tree.show()
+
+def gradient(colors = COLORS, variant = None, backwards = False, duration = 99999):
     if colors == None:
         color1 = rng.integers(0, 256, 3)
         color2 = rng.integers(0, 256, 3)
@@ -48,8 +74,9 @@ def gradient(colors = COLORS, variant = None, backwards = False):
         else:
             tree[index[i]] = tree[index[tree.LED_COUNT - i - 1]].color
     tree.show()
-    tree.cycle(variant, step = speed, backwards = backwards)
+    tree.cycle(variant, step = speed, backwards = backwards, duration = duration)
 
+# Displays a pokéball
 def pokeball():
     tree.fill([25, 25, 0])
     height = 1.1
@@ -62,7 +89,7 @@ def pokeball():
                 pixel.setColor(WHITE)
     tree.show()
 
-def rainbow(variant = None, cycle = True):
+def rainbow(variant = None, cycle = True, duration = 99999):
     if variant == None: variant = rng.integers(2, 5)
     speed = 50
     # Cycles from red to green to blue, for 3*256 total possible colors.
@@ -89,8 +116,9 @@ def rainbow(variant = None, cycle = True):
         color = advance(*color)
         tree[index[i]] = color
     tree.show()
-    if cycle: tree.cycle(variant, step = speed)
+    if cycle: tree.cycle(variant, step = speed, duration = duration)
 
+# Sets all LEDs to the same color
 def setAll(colors = None):
     if colors == None:
         color = rng.integers(0, 256, 3)
@@ -101,6 +129,7 @@ def setAll(colors = None):
     tree.fill(color)
     tree.show()
 
+# Sets all LEDs to a random color
 def setAllRandom(colors = None, continuous = True):
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
@@ -116,6 +145,7 @@ def setAllRandom(colors = None, continuous = True):
         tree.show()
         #sleep(0.1)
 
+# Sets an individual LED a given color
 def setPixel(index, colors = None):
     if colors == None:
         color = rng.integers(0, 256, 3)
