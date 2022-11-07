@@ -7,6 +7,7 @@ import os
 from time import sleep, time
 
 tree.clear()
+tree.clear()
 
 # Random stripes
 # Falling Matrix trails
@@ -25,6 +26,51 @@ tree.clear()
 # Barbershop poll
 # Falling leaves
 # Jack-o-lantern?
+
+# Thanks Arby
+def pulsatingRainbow():
+    radius = .8
+    dR = 0.01
+    minR = 0.4
+    maxR = 1
+    zAngle = 0
+    dZ = 0.03
+    maxZ = np.pi/3
+    angle = 0
+    dA = 0.1
+    colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK]
+    height = 0
+    acc = -0.01
+    dH = .25
+    while True:
+        points = transform(tree.coordinates, z = -height, yr = -zAngle, zr = -angle)
+        for i in range(len(points)):
+            if points[i][0]**2 + points[i][1]**2 + points[i][2]**2 <= radius**2:
+                tree[i].setColor(colors[int(np.floor((4 * points[i][2]/ radius) + 4))])
+        tree.show()
+        radius += dR
+        if radius >= maxR:
+            dR *= -1
+            radius += 2*dR
+        if radius <= minR:
+            dR *= -1
+            radius += 2*dR
+        zAngle += dZ
+        if zAngle > maxZ:
+            dZ *= -1
+            zAngle += 2*dZ
+        if zAngle < -maxZ:
+            dZ *= -1
+            zAngle += 2*dZ
+        angle += dA
+        if angle > 2*np.pi:
+            angle = angle - 2*np.pi
+        dH += acc
+        height += dH
+        if height < 0:
+            height -= dH
+            dH = .25
+        tree.clear(UPDATE = False)
 
 def zSpiral(twists = 4, sections = 110):
     angle = 0
@@ -61,20 +107,24 @@ def stripedFill():
     stripeThickness = np.pi/3 # In radians
     stripeThickness /= 2
     zStep = 0.0003
+    staticColor = (70, 10, 10)
+    firstColor = (5, 90, 5)
+    secondColor = staticColor
     z = tree.zMin
     while True:
         for angle in np.linspace(0, angleDiff, 40):
             for pixel in tree:
                 if abs(abs(abs((pixel.a % angleDiff) - angle) - angleDiff/2) - angleDiff/2) < stripeThickness:
-                    pixel.setColor(RED)
+                    pixel.setColor(staticColor)
                 else:
                     if z > tree.zMax or z < tree.zMin:
-                        zStep *= -1
+                        z = tree.zMin
+                        firstColor, secondColor = secondColor, firstColor
                     z += zStep
                     if pixel.z < z:
-                        pixel.setColor(BLUE)
+                        pixel.setColor(firstColor)
                     else:
-                        pixel.setColor(GREEN)
+                        pixel.setColor(secondColor)
             tree.show()
 
 def binary(SLEEP = 1, backwards = False):
@@ -293,7 +343,7 @@ def planar():
         input()
     tree.clear()
 
-def pulsatingSphere(colors = COLORS):
+def pulsatingSphere(colors = None):
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
     else:
@@ -301,7 +351,7 @@ def pulsatingSphere(colors = COLORS):
             colors = [colors]
         Color = lambda: rng.choice(colors)
     color1 = Color()
-    color2 = color1
+    color2 = BLACK
     while np.array_equal(color1, color2): color2 = Color()
     height = 1.3
     minH = 0.6
@@ -365,12 +415,10 @@ def rain(colors = [[55, 55, 255]]):
 
 # Plays at 17 fps
 def rainingRainbow():
-    sections = 550
-    colorDensity = 2.2
+    sections = 400 # larger = slower (550 for 30 fps)
+    colorDensity = 2.4 # Number of colors displayed at once
     colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, [0, 128, 255], [0, 255, 96]]
     fuzzFactor = 1 # 0 for a sharp barrier between colors.  Larger it is from there, the fuzzier the barrier becomes.  Starts glitching after 1.  
-    #sections = 550 # larger = slower (Adjusted for 30 fps)
-    #colorDensity = 2.2 # Number of colors displayed at once
     while True:
         for z in np.linspace(tree.zMax, tree.zMax - len(colors) * tree.zRange / colorDensity, sections):
             for pixel in tree:
@@ -533,7 +581,7 @@ def spinner(colors = [YELLOW, BLUE]):
     color2 = YELLOW
     speed = 0.1
     height = 1.7
-    theta = np.pi/2 # Clockwise angle around z-axis
+    theta = 0#np.pi/2 # Clockwise angle around z-axis
     phi = np.pi/2 # Angle from positive z-axis
     t = 0
     while True:
@@ -550,13 +598,13 @@ def spinningPlane():
     color = BLUE
     speed = 0.1
     height = 1.7
-    theta = np.pi/2 # Clockwise angle around z-axis
+    theta = 0#np.pi/2 # Clockwise angle around z-axis
     phi = np.pi/2 # Angle from positive z-axis
     t = 0
     while True:
         newCoords = transform(tree.coordinates, z = -height, zr = -theta, xr = t, yr = np.pi/2 - phi)
         for i, coord in enumerate(newCoords):
-            if np.abs(coord[2]) < 0.04:
+            if np.abs(coord[2]) < 0.1:
                 tree[i].setColor(color)
             else:
                 tree[i].setColor(OFF)
@@ -569,19 +617,19 @@ def cylon():
     deltaC = 0.1
     while True:
         center += deltaC
-        if center > tree.xMax:
+        if center > tree.yMax:
             deltaC *= -1
             center += 2 * deltaC
-        if center < tree.xMin:
+        if center < tree.yMin:
             deltaC *= -1
             center += 2 * deltaC
         for pixel in tree:
-            dist = np.abs(pixel.x - center)
+            dist = np.abs(pixel.y - center)
             color = [0, max(10, -130/.3*dist + 130), 0]
             pixel.setColor(color)
         tree.show()
 
-def spirals(colors = [BLUE, WHITE, CYAN, WHITE], numberOfSpirals = 4, spinCount = 2):
+def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, CYAN, PURPLE], numberOfSpirals = 7, spinCount = 2):#[BLUE, WHITE, CYAN, WHITE], numberOfSpirals = 4, spinCount = 2):
     if len(colors) < numberOfSpirals:
         print("Need to supply at least as many colors as spirals")
         return
@@ -602,7 +650,9 @@ def spirals(colors = [BLUE, WHITE, CYAN, WHITE], numberOfSpirals = 4, spinCount 
         if offset == numberOfSpirals:
             for i in range(20):
                 tree.show()
-            break
+            tree.clear()
+            offset = 0 
+            #break
 
 def spotlight(colors = [WHITE, BLUE]):
     if colors == None:
@@ -866,3 +916,19 @@ def saveCoordinates():
     coordinates = [list(pixel.coordinate) for pixel in tree]
     with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "wb") as f:
         pickle.dump(coordinates, f)
+
+from multiprocessing import Process
+from time import time, sleep
+from random import choice
+def randomEffects():
+    funcs = [pulsatingRainbow, zSpiral, stripedFill, sequence, cylinder, pulsatingSphere, rain, spirals
+             , rainingRainbow, randomFill, randomPlanes, snake, spinner, spinningPlane, cylon, spotlight, wander, twinkle]
+    while True:
+        effect = choice(funcs)
+        print(effect)
+        p1 = Process(target=effect)
+        p1.start()
+        sleep(90)
+        p1.terminate()
+#randomEffects()
+    

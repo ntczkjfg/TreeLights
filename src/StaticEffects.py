@@ -64,7 +64,7 @@ def pokeball():
 
 def rainbow(variant = None, cycle = True):
     if variant == None: variant = rng.integers(2, 5)
-    speed = 5
+    speed = 50
     # Cycles from red to green to blue, for 3*256 total possible colors.
     # diffBetweenLEDs determines based on LED_COUNT how much to advance
     # each LED to make this as smooth as possible
