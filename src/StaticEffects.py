@@ -91,7 +91,7 @@ def pokeball():
 
 def rainbow(variant = None, cycle = True, duration = 99999):
     if variant == None: variant = rng.integers(2, 5)
-    speed = 50
+    speed = 20
     # Cycles from red to green to blue, for 3*256 total possible colors.
     # diffBetweenLEDs determines based on LED_COUNT how much to advance
     # each LED to make this as smooth as possible
@@ -130,7 +130,8 @@ def setAll(colors = None):
     tree.show()
 
 # Sets all LEDs to a random color
-def setAllRandom(colors = None, continuous = True):
+def setAllRandom(colors = None, continuous = False, duration = 99999):
+    startTime = time()
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
     else:
@@ -140,10 +141,9 @@ def setAllRandom(colors = None, continuous = True):
     for pixel in tree:
         pixel.setColor(Color())
     tree.show()
-    while continuous:
+    while continuous and time() - startTime < duration:
         tree[rng.integers(0, tree.LED_COUNT)].setColor(Color())
         tree.show()
-        #sleep(0.1)
 
 # Sets an individual LED a given color
 def setPixel(index, colors = None):

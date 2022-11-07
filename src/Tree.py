@@ -85,7 +85,8 @@ class Tree:
             for i in range(len(pixel.neighbors)):
                 pixel.neighbors[i] = self[pixel.neighbors[i]]
     
-    def cycle(self, variant = 0, backwards = False, step = 10):
+    def cycle(self, variant = 0, backwards = False, step = 10, duration = 99999):
+        startTime = time()
         if step == 0: return
         if step < 0:
             step *= -1
@@ -97,7 +98,7 @@ class Tree:
         else:
             a = 1
             b = 0
-        while True:
+        while time() - startTime < duration:
             first = [self.pixels[index[a*(i+b)]].color for i in range(step)]
             for i in range(self.LED_COUNT - step):
                 self.pixels[index[a*(i+b)]].setColor(self.pixels[index[a*(i + step + b)]].color)
