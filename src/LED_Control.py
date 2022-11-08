@@ -34,10 +34,10 @@ tree.clear()
 # A bouncing rainbow ball that changes size and wobbles
 def bouncingRainbowBall(duration = 99999):
     startTime = time()
-    radius = .8
+    radius = .7
     dR = 0.01
     minR = 0.4
-    maxR = 1
+    maxR = .75
     zAngle = 0
     dZ = 0.03
     maxZ = np.pi/3
@@ -46,7 +46,8 @@ def bouncingRainbowBall(duration = 99999):
     colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK]
     height = radius
     acc = -0.01
-    dH = .25
+    initialV = 0.2
+    dH = initialV
     while time() - startTime < duration:
         points = transform(tree.coordinates, z = -height, yr = -zAngle, zr = -angle)
         for i in range(len(points)):
@@ -55,17 +56,17 @@ def bouncingRainbowBall(duration = 99999):
         tree.show()
         radius += dR
         if radius >= maxR:
-            dR *= -1
-            radius += 2*dR
+            dR = -abs(dR)
+            radius += dR
         if radius <= minR:
-            dR *= -1
-            radius += 2*dR
+            dR = abs(dR)
+            radius += dR
         zAngle += dZ
         if zAngle > maxZ:
-            dZ *= -1
-            zAngle += 2*dZ
+            dZ = -abs(dZ)
+            zAngle += dZ
         if zAngle < -maxZ:
-            dZ *= -1
+            dZ  = abs(dZ)
             zAngle += 2*dZ
         angle += dA
         if angle > 2*np.pi:
@@ -74,7 +75,7 @@ def bouncingRainbowBall(duration = 99999):
         height += dH
         if height - radius < 0:
             height -= dH
-            dH = .25
+            dH = initialV
         tree.clear(UPDATE = False)
 
 # A growing and shrinking cylinder that changes the tree colors
@@ -133,11 +134,11 @@ def cylon(duration = 99999):
     while time() - startTime < duration:
         center += deltaC
         if center > tree.yMax:
-            deltaC *= -1
-            center += 2 * deltaC
+            deltaC = -abs(deltaC)
+            center += deltaC
         if center < tree.yMin:
-            deltaC *= -1
-            center += 2 * deltaC
+            deltaC = abs(deltaC)
+            center += deltaC
         for pixel in tree:
             dist = np.abs(pixel.y - center)
             color = [0, max(10, -130/.3*dist + 130), 0]
@@ -194,18 +195,18 @@ def pulsatingSphere(colors = None, duration = 99999):
     deltaR = 0.02
     while time() - startTime < duration:
         if r <= minR:
-            deltaR *= -1
+            deltaR = abs(deltaR)
             r += deltaR
             color1 = color2
             while np.array_equal(color1, color2): color1 = rng.choice(COLORS)
         elif r > maxR:
-            deltaR *= -1
+            deltaR = -abs(deltaR)
             r += deltaR
         if height - r < minH:
-            deltaH *= -1
+            deltaH = abs(deltaH)
             height += deltaH
         elif height + r > maxH:
-            deltaH *= -1
+            deltaH = -abs(deltaH)
             height += deltaH
         for pixel in tree:
             if (pixel.x**2 + pixel.y**2 + (pixel.z-height)**2)**0.5 <= r:
@@ -665,3 +666,4 @@ def show():
                 sleep(10)
             elif variant == 2:
                 setAllRandom(continuous = True, duration = 60)
+show()
