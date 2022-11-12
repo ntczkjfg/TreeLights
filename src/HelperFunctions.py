@@ -1,6 +1,5 @@
-from Common_Variables import rng, tree, mTree
+from Common_Variables import rng, tree
 from StaticEffects import *
-from Transitions import *
 from Colors import *
 from TestingFunctions import *
 from HelperFunctions import *
