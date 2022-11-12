@@ -24,34 +24,6 @@ def binary(SLEEP = 1, backwards = False):
         tree.clear()
         sleep(SLEEP)
 
-# Turns on lights one-by-one in the cardinal directions
-def cardinalTest(colors = None):
-    if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            colors = [colors]
-        Color = lambda: rng.choice(colors)
-    while True:
-        color = Color()
-        tree.clear()
-        for i in tree.sortedX:
-            tree[i] = color
-            tree.show()
-        sleep(1)
-        color = Color()
-        tree.clear()
-        for i in tree.sortedY:
-            tree[i] = color
-            tree.show()
-        sleep(1)
-        color = Color()
-        tree.clear()
-        for i in tree.sortedZ:
-            tree[i] = color
-            tree.show()
-        sleep(1)
-
 # Sequentially shows all LEDs and their "connected" neighbors
 def connectivityTest():
     totalConnections = 0
@@ -71,54 +43,114 @@ def connectivityTest():
           "poorly connected LEDs, and an average of", totalConnections/tree.LED_COUNT, "connections per LED")
     tree.show()
     input()
-    while True:
-        for pixel in tree:
-            tree.clear(False)
-            pixel.setColor(RED)
-            for neighbor in pixel.neighbors:
-                neighbor.setColor(GREEN)
-            tree.show()
-            input()
+    for pixel in tree:
+        tree.clear(False)
+        pixel.setColor(RED)
+        for neighbor in pixel.neighbors:
+            neighbor.setColor(GREEN)
+        tree.show()
+        input()
+    tree.clear()
 
 # Continuously updates all LEDs with a color - useful when stringing the tree
 def continuousUpdate(color = WHITE):
     if color is not None: tree.fill(color)
     while True:
         tree.show()
+        sleep(0.5)
 
-# Lights up thin planar slices of the tree in cardinal directions
-def planarTest():
-    sections = 20
+# Lights up all pixels that are locally the lowest
+def findFloor():
+    tree.clear()
+    for pixel in tree:
+        lowest = True
+        for neighbor in pixel.neighbors:
+            if neighbor.z < pixel.z:
+                lowest = False
+                break
+        if lowest:
+            pixel.setColor(RED)
+    tree.show()
+
+# Lights up thin planar slices of the tree in sorted directions
+def sortedPlanarTest(variant = "a"):
+    sections = 25
     zRange = tree.zRange / sections
     xRange = tree.xRange / sections
     yRange = tree.yRange / sections
-    for z in np.linspace(tree.zMin, tree.zMax, sections + 1):
-        continue
-        tree.clear(False)
-        for pixel in tree:
-            if pixel.coordinate[2] >= z and pixel.coordinate[2] <= z + zRange:
-                pixel.setColor(WHITE)
-        tree.show()
-        print("Showing z from", round(z, 5), "to", round(z + zRange, 5))
-        input()
-    for x in np.linspace(tree.xMin, tree.xMax, sections + 1):
-        tree.clear(False)
-        for pixel in tree:
-            if pixel.coordinate[0] >= x and pixel.coordinate[0] <= x + xRange:
-                pixel.setColor(WHITE)
-        tree.show()
-        print("Showing x from", round(x, 5), "to", round(x + xRange, 5))
-        input()
-    for y in np.linspace(tree.yMin, tree.yMax, sections + 1):
-        continue
-        tree.clear(False)
-        for pixel in tree:
-            if pixel.coordinate[1] >= y and pixel.coordinate[1] <= y + yRange:
-                pixel.setColor(WHITE)
-        tree.show()
-        print("Showing y from", round(y, 5), "to", round(y + yRange, 5))
-        input()
+    aRange = 2*np.pi / sections
+    if variant == "a":
+        for a in np.linspace(0, 2*np.pi, sections + 1):
+            tree.clear(False)
+            for pixel in tree:
+                if pixel.a >= a and pixel.a <= a + aRange:
+                    pixel.setColor(WHITE)
+            tree.show()
+            print("Showing angle from", round(a, 5), "to", round(a + aRange, 5))
+            input()
+    elif variant == "x":
+        for x in np.linspace(tree.xMin, tree.xMax, sections + 1):
+            tree.clear(False)
+            for pixel in tree:
+                if pixel.x >= x and pixel.x <= x + xRange:
+                    pixel.setColor(WHITE)
+            tree.show()
+            print("Showing x from", round(x, 5), "to", round(x + xRange, 5))
+            input()
+    elif variant == "y":
+        for y in np.linspace(tree.yMin, tree.yMax, sections + 1):
+            tree.clear(False)
+            for pixel in tree:
+                if pixel.y >= y and pixel.y <= y + yRange:
+                    pixel.setColor(WHITE)
+            tree.show()
+            print("Showing y from", round(y, 5), "to", round(y + yRange, 5))
+            input()
+    elif variant == "z":
+        for z in np.linspace(tree.zMin, tree.zMax, sections + 1):
+            tree.clear(False)
+            for pixel in tree:
+                if pixel.z >= z and pixel.z <= z + zRange:
+                    pixel.setColor(WHITE)
+            tree.show()
+            print("Showing z from", round(z, 5), "to", round(z + zRange, 5))
+            input()
     tree.clear()
+
+# Turns on lights one-by-one in the sorted directions
+def sortedTest(colors = None):
+    if colors == None:
+        Color = lambda: rng.integers(0, 256, 3)
+    else:
+        if type(colors[0]) != list:
+            colors = [colors]
+        Color = lambda: rng.choice(colors)
+    while True:
+        tree.clear()
+        color = Color()
+        for i in tree.sortedX:
+            tree[i].setColor(color)
+            tree.show()
+        sleep(1)
+        tree.clear()
+        color = Color()
+        for i in tree.sortedY:
+            tree[i].setColor(color)
+            tree.show()
+        sleep(1)
+        tree.clear()
+        color = Color()
+        for i in tree.sortedZ:
+            tree[i].setColor(color)
+            tree.show()
+        sleep(1)
+        tree.clear()
+        color = Color()
+        for i in tree.sortedA:
+            tree[i].setColor(color)
+            tree.show()
+        sleep(1)
+        tree.clear()
 
 # Illuminates the interior and surface LEDs on the tree in different colors
 def surfaceTest(interior = BLUE, surface = RED):

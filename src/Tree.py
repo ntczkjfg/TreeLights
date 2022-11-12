@@ -51,7 +51,8 @@ class Tree:
         self.sortedY = sorted(self.sortedI, key = lambda i: self.pixels[i].y) # Sorted by y-coordinate
         self.sortedZ = sorted(self.sortedI, key = lambda i: self.pixels[i].z) # Sorted by z-coordinate
         self.sortedA = sorted(self.sortedI, key = lambda i: self.pixels[i].a) # Sorted by angle (angle of 0 is along positive x-axis)
-        self.indices = [self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedA]
+        self.sortedR = sorted(self.sortedI, key = lambda i: self.pixels[i].r) # Sorted by radius
+        self.indices = [self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedA, self.sortedR]
         # Following four variables are used to identify LEDs that are on the surface of the tree
         # Assumes tree is conical - calculates linear equation for radius based on z-coordinate
         # Most of the complexity is from trying to account for outliers

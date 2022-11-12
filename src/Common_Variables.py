@@ -10,6 +10,7 @@ def newTree():
     # Coordinates of LEDs in 3D space
     with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "rb") as f:
         coordinates = pickle.load(f)
+        coordinates += [[1, 1, 1] for i in range(50)]
     tree = Tree(coordinates)
     with open("/home/pi/Desktop/TreeLights/Trees/myTree.tree", "wb") as f:
         pickle.dump(tree, f)

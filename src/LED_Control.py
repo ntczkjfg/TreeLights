@@ -26,9 +26,27 @@ tree.clear()
 # Breakout
 # Look like a traffic cone, wizard hat, pizza slice
 # Quicker rain from cloud
-# Barbershop poll
 # Falling leaves
 # Jack-o-lantern?
+
+# Barbershop Pole
+def barbershopPole(colors = [RED, WHITE], spinCount = 3.3, duration = 99999):
+    startTime = time()
+    sectionHeight = tree.zMax / spinCount
+    stripeHeight = sectionHeight / 2
+    angleOffset = 0
+    dAngle = 0.16
+    while time() - startTime < duration:
+        for pixel in tree:
+            p = pixel.z % sectionHeight
+            stripeTop = sectionHeight * ((pixel.a + angleOffset) % (2*np.pi)) / (2*np.pi)
+            if ((p < stripeTop and p > stripeTop - stripeHeight)
+                or p > stripeTop + stripeHeight):
+                pixel.setColor(colors[0])
+            else:
+                pixel.setColor(colors[1])
+        angleOffset = (angleOffset + dAngle) % (2 * np.pi)
+        tree.show()
 
 # Courtesy of Arby
 # A bouncing rainbow ball that changes size and wobbles
@@ -126,8 +144,15 @@ def cylinder(colors = COLORS, duration = 99999):
         color1 = newColor
 
 # Looks like a cylon's eyes
-def cylon(duration = 99999):
+def cylon(color = RED, duration = 99999):
     startTime = time()
+    if color == None:
+        color = rng.integers(0, 256, 3)
+    else:
+        if type(color[0]) != list:
+            color = [color]
+        color = rng.choice(color)
+    color = np.array(color)/np.linalg.norm(color)*130
     tree.clear()
     center = 0
     deltaC = 0.1
@@ -141,8 +166,9 @@ def cylon(duration = 99999):
             center += deltaC
         for pixel in tree:
             dist = np.abs(pixel.y - center)
-            color = [0, max(10, -130/.3*dist + 130), 0]
-            pixel.setColor(color)
+            factor = max(10, -130/.3*dist + 130)/130
+            c = factor * color
+            pixel.setColor(c)
         tree.show()
 
 # Courtesy of Nekisha
@@ -217,6 +243,33 @@ def pulsatingSphere(colors = None, duration = 99999):
         r += deltaR
         height += deltaH
 
+# Radial gradient that flows outward
+def radialGradient(colors = [RED, GREEN], duration = 99999):
+    startTime = time()
+    if colors == None:
+        colors = [rng.integers(0, 256, 3), rng.integers(0, 256, 3)]
+    else:
+        if type(colors[0]) != list or len(colors) != 2:
+            print("Must supply exactly 2 colors for this effect")
+            return
+    colors[0] = np.array(colors[0])
+    colors[1] = np.array(colors[1])
+    radii = [pixel.r for pixel in tree]
+    minR = min(radii)
+    maxR = max(radii)
+    deltaR = maxR - minR
+    deltaP = 1/30
+    while time() - startTime < duration:
+        deltaP -= 1/30
+        for pixel in tree:
+            p = ((pixel.r - minR)/deltaR + deltaP) % 1
+            if p < 0.5:
+                color = colors[0] + 2*p*(colors[1] - colors[0])
+            else:
+                color = colors[1] + 2*(p-0.5)*(colors[0] - colors[1])
+            pixel.setColor(color)
+        tree.show()
+
 # A raining effect
 def rain(colors = [[55, 55, 255]], duration = 99999):
     startTime = time()
@@ -227,8 +280,9 @@ def rain(colors = [[55, 55, 255]], duration = 99999):
             colors = [colors]
         Color = lambda: rng.choice(colors)
     tree.clear(False)
-    dropCount = 20 # Number of raindrops at any moment
-    radius = 0.1 # Size of rain drops (Raindrops are double-tall square cylinders)
+    dropCount = 10 # Number of raindrops at any moment
+    radius = 0.08 # Size of rain drops (Raindrops are double-tall square cylinders)
+    fallSpeed = 0.15 # How fast they fall
     newDrop = lambda: [(rng.random() - 0.5) * tree.xRange/1.5, (rng.random() - 0.5) * tree.yRange/1.5, tree.zMax + 2*rng.random() * 2, Color()]
     raindrops = [newDrop() for i in range(dropCount)]
     while time() - startTime < duration:
@@ -236,7 +290,7 @@ def rain(colors = [[55, 55, 255]], duration = 99999):
             # Next two lines make drop move away from the trunk, third line makes them move down
             drop[0] *= 1.02
             drop[1] *= 1.02
-            drop[2] -= .1
+            drop[2] -= fallSpeed
             if drop[2] < tree.zMin or drop[0]**2 + drop[1]**2 > (1+radius)**2:
                 # Drop is out of range of any LEDs, delete it and make another
                 del raindrops[i]
@@ -247,6 +301,27 @@ def rain(colors = [[55, 55, 255]], duration = 99999):
                     pixel.setColor(drop[3])
         tree.show()
         tree.fade(0.7)
+
+def rain2(duration = 99999):
+    startTime = time()
+    dropCount = 8
+    radius = 0.08
+    fallSpeed = 0.15
+    newDrop = lambda: [rng.random()*2*np.pi, rng.random()*tree.zMax + tree.zMax]
+    drops = [newDrop() for i in range(dropCount)]
+    while time() - startTime < duration:
+        for i, drop in enumerate(drops):
+            drop[1] -= fallSpeed
+            if drop[1] < tree.zMin:
+                del drops[i]
+                drops.append(newDrop())
+                continue
+            for pixel in tree:
+                if pixel.surface and abs(pixel.a - drop[0]) < 0.1 and abs(pixel.z - drop[1]) < radius:
+                    pixel.setColor(CYAN)
+        tree.show()
+        tree.fade(0.75)
+#rain2()
 
 # Turns lights on one at a time in random order in random colors, then turns them off in the same fashion
 def randomFill(colors = COLORS, cycles = 99999):
@@ -515,6 +590,29 @@ def stripedFill(duration = 99999):
                         pixel.setColor(secondColor)
             tree.show()
 
+# Sweeps colors around the tree
+def sweep(colors = COLORS, duration = 99999):
+    startTime = time()
+    if colors == None:
+        Color = lambda: rng.integers(0, 256, 3)
+    else:
+        if type(colors[0]) != list:
+            colors = [colors]
+        Color = lambda: rng.choice(colors)
+    sections = 30
+    color = Color()
+    setAll(color)
+    newColor = Color()
+    while time() - startTime < duration:
+        while np.array_equal(newColor, color): newColor = Color()
+        for i in range(sections + 1):
+            for pixel in tree:
+                if pixel.a < 2*np.pi*i/sections:
+                    pixel.setColor(newColor)
+            tree.show()
+        color = newColor
+        sleep(1)
+
 # Sets all LEDs randomly then lets their brightness vary
 def twinkle(variant = 0, duration = 99999):
     startTime = time()
@@ -596,12 +694,19 @@ def zSpiral(twists = 4, cycles = 99999):
 
 # Puts on a curated show of effects
 def show():
+    oldEffect = 0
+    effect = 0
     while True:
-        effect = rng.integers(1, 22, 1)[0]
+        while effect == oldEffect: effect = rng.integers(1, 26, 1)[0]
+        oldEffect = effect
         if effect == 1:
             cylinder(duration = 90)
         elif effect == 2:
-            cylon(duration = 60)
+            variant = rng.integers(1, 5, 1)[0]
+            if variant < 4:
+                cylon(color = RED, duration = 60)
+            elif variant == 4:
+                cylon(color = COLORS, duration = 60)
         elif effect == 3:
             fallingColors(duration = 90)
         elif effect == 4:
@@ -666,4 +771,35 @@ def show():
                 sleep(10)
             elif variant == 2:
                 setAllRandom(continuous = True, duration = 60)
-show()
+        elif effect == 22:
+            sweep(duration = 90)
+        elif effect == 23:
+            variant = rng.integers(1, 4, 1)[0]
+            if variant == 1:
+                radialGradient([RED, GREEN], duration = 90)
+            elif variant == 2:
+                radialGradient([GREEN, BLUE], duration = 90)
+            elif variant == 3:
+                radialGradient([BLUE, RED], duration = 90)
+        elif effect == 24:
+            variant = rng.integers(1, 9, 1)[0]
+            if variant == 1:
+                barbershopPole([RED, WHITE], duration = 90)
+            elif variant == 2:
+                barbershopPole([BLUE, GREEN], duration = 90)
+            elif variant == 3:
+                barbershopPole([RED, GREEN], duration = 90)
+            elif variant == 4:
+                barbershopPole([BLUE, WHITE], duration = 90)
+            elif variant == 5:
+                barbershopPole([GREEN, PURPLE], duration = 90)
+            elif variant == 6:
+                barbershopPole([CYAN, ORANGE], duration = 90)
+            elif variant == 7:
+                barbershopPole([ORANGE, BLUE], duration = 90)
+            elif variant == 8:
+                barbershopPole([YELLOW, PURPLE], duration = 90)
+        elif effect == 25:
+            pizza()
+            sleep(10)
+#show()
