@@ -17,6 +17,13 @@ OFF = (0, 0, 0)
 
 PATH = "/home/pi/Desktop/TreeLights/TreePhotos/"
 
+def next(i, j):
+    pixels.fill(OFF)
+    pixels[i] = ON
+    pixels.show()
+    pixels.show()
+    print(str(j) + "/" + (str("00") + str(i))[-3:], end = ", ")
+
 # Takes a picture of each LED in sequence.
 # Does that 8 times in a row, for 8 different angles.
 # Rotate tree 45° clockwise between each round of photos.
@@ -39,18 +46,12 @@ def takePictures(savePhotos = False, manual = True):
                 if manual:
                     x = "'"
                     while x == "'":
-                        pixels.fill(OFF)
-                        pixels[i] = ON
-                        pixels.show()
-                        x = input(str(j) + "/" + (str("00") + str(i))[-3:] + "...")
+                        next(i, j)
                         if x == "q":
                             manual = False
                             break
                 else:
-                    pixels.fill(OFF)
-                    pixels[i] = ON
-                    pixels.show()
-                    print(str(j) + "/" + (str("00") + str(i))[-3:], end = ", ")
+                    next(i, j)
                     sleep(.5)
                 if savePhotos:
                     camera.capture(PATH + str(j) + "/" + (str("00") + str(i))[-3:] + ".jpg")
@@ -77,10 +78,8 @@ def fixErrors():
         x = "'"
         try:
             while x == "'":
-                pixels.fill(OFF)
-                pixels[i] = ON
-                pixels.show()
-                x = input(str(j) + "/" + (str("00") + str(i))[-3:] + "...")
+                next(i, j)
+                x = input("...")
             camera.capture(PATH + str(j) + "/" + (str("00") + str(i))[-3:] + ".jpg")
             sleep(0.1)
         except KeyboardInterrupt:
