@@ -157,3 +157,19 @@ def surfaceTest(interior = BLUE, surface = RED):
     for pixel in tree:
         if pixel.surface: pixel.setColor(surface)
     tree.show()
+
+def coordinateChange(index, coord, value):
+    if coord == 0:
+        tree[index].x = value
+    elif coord == 1:
+        tree[index].y = value
+    elif coord == 2:
+        tree[index].z = value
+    else:
+        print("Invalid coord")
+        return
+    tree[index].coordinate[coord] = value
+    tree.coordinates[index][coord] = value
+    with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "wb") as f:
+        pickle.dump(tree.coordinates, f)
+    rebuildTree(save = True)

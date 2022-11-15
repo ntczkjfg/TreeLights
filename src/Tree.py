@@ -76,7 +76,7 @@ class Tree:
             self.pixels[self.sortedY[i]].yindex = i
             self.pixels[self.sortedZ[i]].zIndex = i
             self.pixels[self.sortedA[i]].aIndex = i
-            if self.pixels[i].r - 0.9 * (m * self.pixels[i].z + b) > 0:
+            if self.pixels[i].r - 0.6 * (m * self.pixels[i].z + b) > 0:
                 self.pixels[i].surface = True
     
     # This function exists because pickling the tree fails with a RecursionError exception if the neighbors

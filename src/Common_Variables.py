@@ -3,6 +3,7 @@ import numpy as np
 from Tree import Tree
 
 rng = np.random.default_rng()
+np.tau = 2*np.pi
 
 tree = None
 def newTree():
