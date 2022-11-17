@@ -78,7 +78,7 @@ def gradient(colors = COLORS, variant = None, backwards = False, duration = 9999
 
 # Makes the tree pizza
 def pizza():
-    pepperoniCount = 8
+    pepperoniCount = 5
     pepperoniRadius = 1/8
     crustHeight = 0.7
     cheeseColor = [140, 255, 0]
@@ -90,9 +90,11 @@ def pizza():
             pixel.setColor(cheeseColor)
     for pepperoni in range(pepperoniCount):
         pepperoniHeight = crustHeight + rng.random()*(tree.zMax - crustHeight)
-        pepperoniY = 2*rng.random() - 1
+        pepperoniY = tree.yMin + rng.random() * (tree.yMax - tree.yMin)
         for pixel in tree:
-            if pixel.surface and ((pixel.z-pepperoniHeight)**2 + pixel.y**2)**0.5 < pepperoniRadius:
+            if (pixel.surface
+                and pixel.z > 0
+                and ((pixel.z-pepperoniHeight)**2 + pixel.y**2)**0.5 < pepperoniRadius):
                 pixel.setColor(RED)
                 for neighbor in pixel.neighbors:
                     neighbor.setColor(RED)
@@ -176,27 +178,4 @@ def setPixel(index, colors = None):
             colors = [colors]
         color = rng.choice(colors)
     tree[index] = color
-    tree.show()
-
-# Gradient from center of tree to outer edge
-def staticRadialGradient(colors = [RED, GREEN]):
-    if colors == None:
-        colors = [rng.integers(0, 256, 3), rng.integers(0, 256, 3)]
-    else:
-        if type(colors[0]) != list or len(colors) != 2:
-            print("Must supply exactly 2 colors for this effect")
-            return
-    colors[0] = np.array(colors[0])
-    colors[1] = np.array(colors[1])
-    radii = [pixel.r for pixel in tree]
-    minR = min(radii)
-    maxR = max(radii)
-    deltaR = maxR - minR
-    for pixel in tree:
-        try:
-            p = (pixel.r - minR)/deltaR
-            color = colors[0] + p*(colors[1] - colors[0])
-            pixel.setColor(color)
-        except:
-            print(p, color)
     tree.show()
