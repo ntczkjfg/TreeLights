@@ -1,8 +1,8 @@
 from Common_Variables import rng, tree
 from Colors import *
 import numpy as np
-from PIL import Image
 from time import time, sleep
+from PIL import Image
 
 # Displays images
 def displayImage(fileName, markTemplate = False):

@@ -1,9 +1,10 @@
-import pickle
-import numpy as np
 from Tree import Tree
+import numpy as np
+import pickle
 
 rng = np.random.default_rng()
-np.tau = 2*np.pi
+PI = float(np.pi)
+TAU = 2*PI
 
 tree = None
 def newTree():

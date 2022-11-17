@@ -1,10 +1,8 @@
 from Common_Variables import rng, tree
-from StaticEffects import *
 from Colors import *
-from TestingFunctions import *
-from HelperFunctions import *
+from Simple_Effects import *
+from Helper_Functions import *
 import numpy as np
-import os
 from time import sleep, time
 
 # Has each light blink out its index number in binary
@@ -77,9 +75,9 @@ def sortedPlanarTest(variant = "a"):
     zRange = tree.zRange / sections
     xRange = tree.xRange / sections
     yRange = tree.yRange / sections
-    aRange = 2*np.pi / sections
+    aRange = TAU / sections
     if variant == "a":
-        for a in np.linspace(0, 2*np.pi, sections + 1):
+        for a in np.linspace(0, TAU, sections + 1):
             tree.clear(False)
             for pixel in tree:
                 if pixel.a >= a and pixel.a <= a + aRange:
