@@ -211,8 +211,8 @@ class Pixel():
         self.y = self.coordinate[1]
         self.z = self.coordinate[2]
         self.a = np.arctan(self.y/self.x)# Angles between -π/2 and π/2
-        if self.x < 0: self.a += PI # Angles between -π/2 and 3π/2
-        self.a = self.a % TAU # Angles between 0 and 2π
+        if self.x < 0: self.a += np.pi # Angles between -π/2 and 3π/2
+        self.a = self.a % (2*np.pi) # Angles between 0 and 2π
         self.r = (self.x**2 + self.y**2)**0.5
         self.color = [0, 0, 0]
         self.xIndex = -1

@@ -1,4 +1,4 @@
-from Common_Variables import rng, tree
+from Common_Variables import rng, tree, PI, TAU
 from Colors import *
 from Simple_Effects import *
 from Helper_Functions import *
