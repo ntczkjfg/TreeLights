@@ -1,7 +1,14 @@
 import numpy as np
 from time import sleep, time
-import board
-import neopixel
+import platform
+if platform.system() == "Windows":
+    from FakeTree import FakeTree as neopixel
+    import FakeTree as board
+elif platform.system() == "Linux":
+    import board
+    from neopixel import NeoPixel as neopixel
+else:
+    print("Unknown operating system.", platform.system())
 
 LED_PIN = board.D18
 
@@ -10,7 +17,7 @@ class Tree:
         self.[i] returns the color of the i-th LED and can also be used to set said color."""
     
     def __init__(self, coordinates):
-        self.LEDs = neopixel.NeoPixel(LED_PIN, len(coordinates), auto_write = False)
+        self.LEDs = neopixel(LED_PIN, len(coordinates), auto_write = False)
         self.LED_COUNT = len(coordinates)
         self.brightness = 1 # ∈(0, 1]
         self.xMin = 1000
