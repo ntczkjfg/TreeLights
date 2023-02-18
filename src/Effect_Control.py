@@ -162,7 +162,7 @@ def show(setEffect = None):
                 color = [CYAN, BLUE][variant]
                 speed = 0.15 + 0.4*rng.random()
                 wind = -0.3 + 0.6*rng.random()
-            elif variant == 3: # Like the matrix
+            elif variant == 2: # Like the matrix
                 color = GREEN
                 speed = 0.15
                 wind = 0

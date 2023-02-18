@@ -133,7 +133,7 @@ def cylon(color = RED, duration = np.inf):
         if type(color[0]) != list:
             color = [color]
         color = rng.choice(color)
-    color = [130*k/np.linalg.norm(color) for k in color]
+    color = np.array([130*k/np.linalg.norm(color) for k in color])
     tree.clear()
     center = 0
     deltaC = 0.1
@@ -664,7 +664,7 @@ def twinkle(variant = 0, color = [50, 50, 50], intensity = 0, duration = np.inf)
                     f = (9 - intensity + pixel.flag)/(12 - intensity)
                 else:
                     f = (12 - intensity)/(15 - intensity - pixel.flag)
-                pixel.setColor([min(255, max(0, k*f)) for k in c])
+                pixel.setColor([min(255, max(0, k*f)) for k in pixel.color])
                 pixel.flag -= 1
         tree.show()
 
