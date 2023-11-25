@@ -12,11 +12,16 @@ PATH = "C:/Users/User/Desktop/TreePhotos/"
 # Will place a yellow square where it thinks an LED may be, but wasn't certain enough to commit.
 MARK_IMAGES = True
 
+imageCoordinates = None
+LED_COUNT = 0
+
 # imageCoordinates is pre-computed.  Running analyzeImages() will disregard
 # the pre-computed version and make a new one.  Takes several hours to run.  Holds the calculated 3D coordinates
 # of each LED in each camera angle.
 def loadImageCoordinates():
-    with open("/home/pi/Desktop/TreeLights/TreePhotos/imageCoordinates.pickle", "rb") as f:
+    global imageCoordinates
+    global LED_COUNT
+    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/imageCoordinates.pickle", "rb") as f:
         imageCoordinates = pickle.load(f)
     LED_COUNT = len(imageCoordinates[0])
 
@@ -117,7 +122,7 @@ def analyzeImages():
         # Just to get the newline character
         print()
         imageCoordinates.append(coordinatesTemp)
-    with open("/home/pi/Desktop/TreeLights/TreePhotos/imageCoordinates.pickle", "wb") as f:
+    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/imageCoordinates.pickle", "wb") as f:
         pickle.dump(imageCoordinates, f)
     print(imageCoordinates)
     LED_COUNT = len(imageCoordinates[0])
@@ -264,6 +269,7 @@ def normalize():
 # Calculate everything.  Does not analyze images.  
 def calc():
     global coordinates
+    loadImageCoordinates()
     pixelsPerInch = 16.85 # Manually calculated, as are below two values
     cameraDist = 50 * pixelsPerInch
     cameraHeight = 31.25 * pixelsPerInch
@@ -273,6 +279,8 @@ def calc():
     findErrors()
     normalize()
     coordinates = [[round(coord, 5) for coord in coordinate] for coordinate in coordinates]
+    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/coordinates.list", "wb") as f:
+        pickle.dump(coordinates, f)
     print(coordinates)
 
 #analyzeImages()
