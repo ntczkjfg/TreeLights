@@ -343,4 +343,5 @@ def quickShow(setEffect = None):
 
 if __name__ == "__main__":
     pass
-    show()
+    #show()
+    rainbow()

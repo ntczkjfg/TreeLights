@@ -30,7 +30,7 @@ def next(i, j):
 # In manual mode, pressing Enter takes a picture, while entering
 # an apostrophe re-sends the light commands, to control for errors.
 # Enter q in manual mode to change to automatic mode.  
-def takePictures(savePhotos = False, manual = True):
+def takePictures(savePhotos = False, manual = False):
     if savePhotos == False:
         print("Not saving photos")
     else:

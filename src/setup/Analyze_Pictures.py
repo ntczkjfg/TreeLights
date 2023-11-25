@@ -15,10 +15,10 @@ MARK_IMAGES = True
 # imageCoordinates is pre-computed.  Running analyzeImages() will disregard
 # the pre-computed version and make a new one.  Takes several hours to run.  Holds the calculated 3D coordinates
 # of each LED in each camera angle.
-with open("/home/pi/Desktop/TreeLights/TreePhotos/imageCoordinates.pickle", "rb") as f:
-    imageCoordinates = pickle.load(f)
-
-LED_COUNT = len(imageCoordinates[0])
+def loadImageCoordinates():
+    with open("/home/pi/Desktop/TreeLights/TreePhotos/imageCoordinates.pickle", "rb") as f:
+        imageCoordinates = pickle.load(f)
+    LED_COUNT = len(imageCoordinates[0])
 
 # data will hold all our data related to the LED locating process.  
 # data[i] will hold data for the i-th LED.
@@ -117,6 +117,8 @@ def analyzeImages():
         # Just to get the newline character
         print()
         imageCoordinates.append(coordinatesTemp)
+    with open("/home/pi/Desktop/TreeLights/TreePhotos/imageCoordinates.pickle", "wb") as f:
+        pickle.dump(imageCoordinates, f)
     print(imageCoordinates)
     LED_COUNT = len(imageCoordinates[0])
 

@@ -12,17 +12,30 @@ else:
 rng = np.random.default_rng()
 PI = float(np.pi)
 TAU = 2*PI
-
 tree = None
-def newTree():
+
+# Generates a new tree with user-supplied coordinates
+def newTree(coordinates = None):
     global tree
-    coordinates = None
+    if not coordinates:
+        print("Error: Must supply coordinates.")
+        return
     with open(PATH + "coordinates.list", "wb") as f:
         pickle.dump(coordinates, f)
     tree = Tree(coordinates)
     with open(PATH + "myTree.tree", "wb") as f:
         pickle.dump(tree, f)
+    tree.finishNeighbors()
 
+# Makes fake coordinates and builds a tree from them
+# Useful for testing before coordinates have been generated
+def dummyTree(LEDCount = 800):
+    global tree
+    coordinates = [[rng.random(), rng.random(), rng.random()] for i in range(LEDCount)]
+    newTree(coordinates)
+
+# Rebuilds the pickled tree from scratch, using existing coordinates, then repickles
+# This needs to be done if the Tree class is modified
 def rebuildTree(save = False):
     global tree
     with open(PATH + "coordinates.list", "rb") as f:
@@ -31,22 +44,14 @@ def rebuildTree(save = False):
     if save:
         with open(PATH + "myTree.tree", "wb") as f:
             pickle.dump(tree, f)
+    tree.finishNeighbors()
 
+# Loads pickled tree - significantly faster than building from scratch
 def savedTree(name):
     global tree
     with open(PATH + name + ".tree", "rb") as f:
         tree = pickle.load(f)
+    tree.finishNeighbors()
 
-# Generates a new tree, using manually-input new coordinates
-#newTree()
-
-# Rebuilds the same tree, using existing coordinates
-# Must be used if Tree class is modified
-rebuildTree(save = False)
-
-# Loads pickled Tree - significantly faster than building from scratch
-#savedTree("myTree")
-
-# Pickling fails if this is done before pickling, due to recursion errors
-# Converts pixel neighbors to proper format
-tree.finishNeighbors()
+if __name__ != "__main__":
+    savedTree("myTree")
