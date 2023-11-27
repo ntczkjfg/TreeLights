@@ -343,5 +343,5 @@ def quickShow(setEffect = None):
 
 if __name__ == "__main__":
     pass
-    #show()
-    rainbow()
+    tree[0].a = 0
+    show()
