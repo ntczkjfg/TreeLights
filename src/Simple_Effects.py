@@ -1,15 +1,23 @@
-from Common_Variables import rng, tree
+from Common_Variables import rng, tree, PI, TAU
 from Colors import *
+from Helper_Functions import *
 import numpy as np
 from time import time, sleep
 from PIL import Image
+
+def pickle():
+    tree.clear(UPDATE = False)
+    tree[548].setColor(GREEN)
+    tree[61].setColor(GREEN)
+    tree[49].setColor(RED)
+    tree.show()
 
 # Displays images
 def displayImage(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
     with Image.open(PATH) as im:
         img = im.load()
-        tree.clear(False)
+        tree.clear(UPDATE = False)
         for pixel in tree:
             x = im.size[0] * (-pixel.x + 1) / 2
             y = im.size[1] - 1 - (im.size[0] * pixel.z / 2)
@@ -32,7 +40,7 @@ def displayImage2(fileName, markTemplate = False):
     eye = np.array([0, 4.5, 2.2])
     with Image.open(PATH) as im:
         img = im.load()
-        tree.clear(False)
+        tree.clear(UPDATE = False)
         for pixel in tree:
             vect = eye - pixel.coordinate
             t = -eye[1] / vect[1]
@@ -51,26 +59,25 @@ def displayImage2(fileName, markTemplate = False):
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
 
-def gradient(colors = COLORS, variant = None, backwards = False, duration = 99999):
+def gradient(colors = COLORS, variant = None, backwards = False, speed = 10, duration = 99999):
     if colors == None:
         color1 = rng.integers(0, 256, 3)
         color2 = rng.integers(0, 256, 3)
+        while not contrast(color1, color2): color2 = rng.integers(0, 256, 3)
+        color1 = 255 * color1 / (color1[0] + color1[1] + color1[2])
+        color2 = 255 * color2 / (color2[0] + color2[1] + color2[2])
     else:
         if type(colors[0]) != list or len(colors) < 2:
             print("You must supply at least two colors for this effect")
             return
         color1, color2 = rng.choice(colors, 2, False)
-    speed = 10
+        while not contrast(color1, color2): color2 = rng.choice(colors)
     if variant == None: variant = rng.integers(3, 5)
     index = tree.indices[variant]
-    greenDiff = (color2[0] - color1[0])/(tree.LED_COUNT - 1)*2
-    redDiff = (color2[1] - color1[1])/(tree.LED_COUNT - 1)*2
-    blueDiff = (color2[2] - color1[2])/(tree.LED_COUNT - 1)*2
+    diff = 2*(color2 - color1)/(tree.LED_COUNT - 1)
     for i in range(tree.LED_COUNT):
         if i < tree.LED_COUNT / 2:
-            tree[index[i]] = [color1[0] + i*greenDiff
-                                , color1[1] + i*redDiff
-                                , color1[2] + i*blueDiff]
+            tree[index[i]] = color1 + i*diff
         else:
             tree[index[i]] = tree[index[tree.LED_COUNT - i - 1]].color
     tree.show()
@@ -93,8 +100,8 @@ def pizza():
         pepperoniY = tree.yMin + rng.random() * (tree.yMax - tree.yMin)
         for pixel in tree:
             if (pixel.surface
-                and pixel.z > 0
-                and ((pixel.z-pepperoniHeight)**2 + pixel.y**2)**0.5 < pepperoniRadius):
+                and pixel.x > 0
+                and ((pixel.z-pepperoniHeight)**2 + (pixel.y-pepperoniY)**2)**0.5 < pepperoniRadius):
                 pixel.setColor(RED)
                 for neighbor in pixel.neighbors:
                     neighbor.setColor(RED)
@@ -142,6 +149,62 @@ def rainbow(variant = None, cycle = True, duration = 99999):
     tree.show()
     if cycle: tree.cycle(variant, step = speed, duration = duration)
 
+# Turns lights on one at a time in random order in random colors, then turns them off in the same fashion
+def randomFill(colors = COLORS, speed = 1, cycles = 99999):
+    if colors == None:
+        Color = lambda: rng.integers(0, 256, 3)
+    else:
+        if type(colors[0]) != list:
+            # Assume function was provided a single color, make a list with just that color
+            colors = [colors]
+        Color = lambda: rng.choice(colors)
+    tree.clear()
+    order = [i for i in range(tree.LED_COUNT)]
+    for cycle in range(cycles):
+        rng.shuffle(order)
+        for i in range(tree.LED_COUNT // speed + 1):
+            for j in range(speed):
+                index = speed*i + j
+                if index >= tree.LED_COUNT: continue
+                tree[order[index]].setColor(Color())
+            tree.show()
+        sleep(1)
+        rng.shuffle(order)
+        for i in range(tree.LED_COUNT // speed + 1):
+            for j in range(speed):
+                index = speed*i + j
+                if index >= tree.LED_COUNT: continue
+                tree[order[index]].setColor(OFF)
+            tree.show()
+        sleep(1)
+
+# Rapid flashing of blue and yellow
+def seizure(duration = np.inf):
+    startTime = time()
+    while time() - startTime < duration:
+        tree.fill(BLUE)
+        tree.show()
+        tree.clear()
+        tree.fill(YELLOW)
+        tree.show()
+        tree.clear()
+
+# Lights up each LED in their wiring order
+def sequence(colors = None, speed = 1, cycles = 1):
+    for cycle in range(cycles):
+        if colors == None:
+            color = rng.integers(0, 256, 3)
+        else:
+            if type(colors[0]) != list:
+                colors = [colors]
+            color = rng.choice(colors)
+        tree.clear()
+        i = 0
+        for pixel in tree:
+            pixel.setColor(color)
+            i += 1
+            if i % speed == 0 or i == tree.LED_COUNT: tree.show()
+
 # Sets all LEDs to the same color
 def setAll(colors = None):
     if np.array_equal(colors, None):
@@ -154,8 +217,9 @@ def setAll(colors = None):
     tree.show()
 
 # Sets all LEDs to a random color
-def setAllRandom(colors = None, continuous = False, duration = 99999):
+def setAllRandom(colors = None, speed = 0, duration = 99999):
     startTime = time()
+    continuous = speed > 0
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
     else:
@@ -166,7 +230,8 @@ def setAllRandom(colors = None, continuous = False, duration = 99999):
         pixel.setColor(Color())
     tree.show()
     while continuous and time() - startTime < duration:
-        tree[rng.integers(0, tree.LED_COUNT)].setColor(Color())
+        for i in range(speed):
+            tree[rng.integers(0, tree.LED_COUNT)].setColor(Color())
         tree.show()
 
 # Sets an individual LED a given color

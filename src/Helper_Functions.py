@@ -1,10 +1,27 @@
-from Common_Variables import rng, tree
+from Common_Variables import rng, tree, PI, TAU
 from Colors import *
 from Simple_Effects import *
 from Testing_Functions import *
 import numpy as np
 from time import sleep, time
 from os import listdir
+
+def contrast(color1, color2):
+    if np.array_equal(color1, BLACK) or np.array_equal(color2, BLACK):
+        if not np.array_equal(color1, color2):
+            return True
+        return False
+    # Normalizing the colors to roughly equal brightness (Since brightness differences don't show up well in the tree)
+    c1brightness = color1[0] + color1[1] + color1[2]
+    c2brightness = color2[0] + color2[1] + color2[2]
+    color1 = np.array(color1)
+    color2 = np.array(color2)
+    color1 = 100 * color1 / c1brightness
+    color2 = 100 * color2 / c2brightness
+    hueDifference = abs(color1[0] - color2[0]) + abs(color1[1] - color2[1]) + abs(color1[2] - color2[2])
+    # 40 determined manually as good compromise
+    # Not perfect but keeps most good combos while removing the worst of the worst
+    return hueDifference >= 40
 
 # Runs about 30 fps
 def runFromCSV(name, m = None):

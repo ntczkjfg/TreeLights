@@ -62,14 +62,11 @@ class Tree:
         self.indices = [self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedA, self.sortedR]
         # Following four variables are used to identify LEDs that are on the surface of the tree
         # Assumes tree is conical - calculates linear equation for radius based on z-coordinate
-        # Most of the complexity is from trying to account for outliers
-        maxR = min([self.xMax, self[self.sortedX[-1]].z],
-                   [self.yMax, self[self.sortedY[-1]].z],
-                   [-self.xMin, self[self.sortedX[0]].z],
-                   [-self.yMin, self[self.sortedY[0]].z])
-        maxZ = self[self.sortedZ[-2]].z
-        m = maxR[0] / (maxR[1] - maxZ)
-        b = -m * maxZ
+        # Tries to account for outliers
+        maxR = self[self.sortedR[-self.LED_COUNT // 10]].r
+        maxZ = self[self.sortedZ[-8]].z
+        m = -maxR / maxZ
+        b = maxR
         for i in range(self.LED_COUNT):
             for pixel in self: # This loop identifies neighbors to each pixel - very slow because of nested for loops
                 if pixel.index != i: # Don't count an LED as its own neighbor
@@ -77,13 +74,15 @@ class Tree:
                         self[i].neighbors.append(pixel.index)
                         continue
                     d = ((self[i].x - pixel.x)**2 + (self[i].y - pixel.y)**2 + (self[i].z - pixel.z)**2)**0.5
-                    if d < 0.9*avgDist:
+                    if d <= avgDist:
                         self[i].neighbors.append(pixel.index)
+            # Might as well set these now
             self.pixels[self.sortedX[i]].xIndex = i
             self.pixels[self.sortedY[i]].yindex = i
             self.pixels[self.sortedZ[i]].zIndex = i
             self.pixels[self.sortedA[i]].aIndex = i
-            if self.pixels[i].r - 0.6 * (m * self.pixels[i].z + b) > 0:
+            self.pixels[self.sortedR[i]].rIndex = i
+            if self.pixels[i].r > (m * self.pixels[i].z + b) - 0.05:
                 self.pixels[i].surface = True
     
     # This function exists because pickling the tree fails with a RecursionError exception if the neighbors
@@ -219,15 +218,14 @@ class Pixel():
         self.yIndex = -1
         self.zIndex = -1
         self.aIndex = -1
+        self.rIndex = -1
         self.surface = False
         self.flag = 0
         self.neighbors = []
     
     def setColor(self, color):
         self.color = list(color)
-        self.tree.LEDs[self.index] = [self.tree.brightness * self.color[0],
-                                      self.tree.brightness * self.color[1],
-                                      self.tree.brightness * self.color[2]]
+        self.tree.LEDs[self.index] = [self.tree.brightness * k for k in color]
     
     def __repr__(self):
         return str([self.index, self.coordinate, self.color])

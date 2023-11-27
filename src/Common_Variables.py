@@ -36,7 +36,7 @@ def dummyTree(LEDCount = 800):
 
 # Rebuilds the pickled tree from scratch, using existing coordinates, then repickles
 # This needs to be done if the Tree class is modified
-def rebuildTree(save = False):
+def rebuildTree(save = True):
     global tree
     with open(PATH + "coordinates.list", "rb") as f:
         coordinates = pickle.load(f)

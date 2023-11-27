@@ -7,27 +7,71 @@ from Effect_Control import *
 import numpy as np
 from time import sleep, time
 from os import listdir
-
-# When the tree first receives power, some lights turn on randomly - clear to fix
-tree.clear()
-tree.clear()
+import datetime
 
 # Random stripes
-# Falling Matrix trails
 # Expanding shapes from center
 # Expanding / contracting stripes at random angles
 # Letters
 # Small number of points moving around with fading trails
 # Sierpinski?
-# Fire?
 # Tartan
-# Accumulating snow
-# Clock
+# Digital Clock
 # Breakout
 # Look like a traffic cone, wizard hat
-# Quicker rain from cloud
 # Falling leaves
-# Jack-o-lantern?
+# Jack-o-lantern?                
+
+# Rotates the tree while running alternatingly colored vertical stripes alternatingly up and down
+def alternatingStripes(colors = [[0, 10, 90], [5, 90, 5], [70, 15, 15]], duration = np.inf):
+    startTime = time()
+    if colors == None:
+        colors = [[0, 10, 90], [5, 90, 5], [70, 15, 15]]
+    else:
+        if type(colors[0]) != list or len(colors) != 3:
+            print("Must supply exactly three colors for this effect.")
+            return
+    numberOfStripes = 2
+    angleDiff = 0
+    dAngle = -0.00025
+    z = tree.zMin
+    dz = 0.0003
+    while time() - startTime < duration:
+        tree.clear(UPDATE = False)
+        for pixel in tree:
+            if not pixel.surface: continue
+            pixel.setColor(colors[0])
+            if ((pixel.a + angleDiff) // (PI/numberOfStripes)) % 2 == 0:
+                if pixel.z < z and pixel.z > z - tree.zRange:
+                    pixel.setColor(colors[1])
+            else:
+                if pixel.z > tree.zMax - z and pixel.z < tree.zMax - z + tree.zRange:
+                    pixel.setColor(colors[2])
+            z += dz
+            if z > 2 * tree.zMax:
+                dz = -abs(dz)
+            if z < tree.zMin:
+                dz = abs(dz)
+            angleDiff = (angleDiff + dAngle) % TAU
+        tree.show()
+
+# Blinks lights on and off
+def blink(colors = TRADITIONALCOLORS, groups = 7, p = 0.7, slowness = 1, duration = np.inf):
+    startTime = time()
+    setAllRandom(colors)
+    tree.clear(FLAGSONLY = True)
+    for pixel in tree:
+        pixel.flag = [rng.integers(0, groups), pixel.color]
+    while time() - startTime < duration:
+        groupStatuses = [True if rng.random() < p else False for i in range(groups)]
+        sleep(slowness)
+        for pixel in tree:
+            if not groupStatuses[pixel.flag[0]]:
+                pixel.setColor(OFF)
+            else:
+                pixel.setColor(pixel.flag[1])
+        tree.show()
+        tree.show()
 
 # Courtesy of Arby
 # A bouncing rainbow ball that changes size and wobbles
@@ -77,6 +121,67 @@ def bouncingRainbowBall(duration = np.inf):
             dH = initialV
         tree.clear(UPDATE = False)
 
+def clock(duration = np.inf):
+    startTime = time()
+    center = None
+    for pixel in tree:
+        if center == None:
+            center = pixel
+            continue
+        if     (.5*( pixel.x - tree.xMax)**2 + 5* pixel.y**2 + ( pixel.z - 0.45*tree.zMax)**2
+              < .5*(center.x - tree.xMax)**2 + 5*center.y**2 + (center.z - 0.45*tree.zMax)**2):
+            center = pixel
+    while time() - startTime < duration:
+        tree.clear(False)
+        currentTime = datetime.datetime.now()
+        hour = currentTime.hour % 12
+        minute = currentTime.minute
+        second = currentTime.second
+        hourAngle = (-(hour*TAU/12 + minute*TAU/12/60 + second*TAU/12/60/60 - PI/2)) % TAU
+        minuteAngle = (-(minute*TAU/60 + second*TAU/60/60 - PI/2)) % TAU
+        secondAngle = (-(second*TAU/60 - PI/2)) % TAU
+        m1 = min(max(-np.tan(hourAngle), -15), 15)
+        m2 = min(max(-np.tan(minuteAngle), -15), 15)
+        m31 = -np.tan(secondAngle)
+        m3 = min(max(m31, -15), 15)
+        b1 = -m1*center.y - center.z
+        b2 = -m2*center.y - center.z
+        b3 = -m3*center.y - center.z
+        c1 = (m1**2+1)**0.5
+        c2 = (m2**2+1)**0.5
+        c3 = (m3**2+1)**0.5
+        center.setColor(RED)
+        for pixel in tree:
+            if not pixel.surface or pixel.x < 0 or pixel == center: continue
+            if currentTime.hour >= 12 and pixel.z > 0.85*tree.zMax:
+                pixel.setColor(BLUE)
+                continue
+            dist = ((pixel.y - center.y)**2 + (pixel.z - center.z)**2)**0.5
+            if dist > 0.9: continue
+            if (dist >= .7
+                and dist < .9):
+                pixel.setColor(WHITE)
+                continue
+            if dist < 0.05:
+                pixel.setColor(RED)
+                continue
+            angle = np.arctan((pixel.z - center.z) / (pixel.y - center.y))
+            if pixel.y < center.y: angle += PI
+            angle = angle % TAU
+            if (abs(m1*pixel.y + pixel.z + b1) / c1 < 0.085
+                and dist < .5
+                and abs(angle - hourAngle) < 2):
+                pixel.setColor(GREEN)
+            elif (abs(m2*pixel.y + pixel.z + b2) / c2 < 0.12
+                  and dist < .7
+                  and abs(angle - minuteAngle) < 2):
+                pixel.setColor(BLUE)
+            elif (abs(m3*pixel.y + pixel.z + b3) / c3 < 0.12
+                  and dist < .7
+                  and abs(angle - secondAngle) < 2):
+                pixel.setColor(YELLOW)
+        tree.show()
+
 # A growing and shrinking cylinder that changes the tree colors
 def cylinder(colors = COLORS, duration = np.inf):
     startTime = time()
@@ -89,7 +194,7 @@ def cylinder(colors = COLORS, duration = np.inf):
         Color = lambda: rng.choice(colors)
     color1 = Color()
     color2 = Color()
-    while np.array_equal(color1, color2): color2 = Color()
+    while not contrast(color1, color2): color2 = Color()
     tree.fill(color2)
     midZ = tree.zRange/2 + tree.zMin
     rRange = 2**.5
@@ -107,7 +212,7 @@ def cylinder(colors = COLORS, duration = np.inf):
                     pixel.setColor(color1)
             tree.show()
         newColor = Color()
-        while np.array_equal(color1, newColor) or np.array_equal(color2, newColor): newColor = Color()
+        while not contrast(color1, newColor) or np.array_equal(color2, newColor): newColor = Color()
         color2 = newColor
         for r in np.linspace(rRange, minR, sections):
             for pixel in tree:
@@ -121,7 +226,7 @@ def cylinder(colors = COLORS, duration = np.inf):
             tree.show()
         sleep(0.2)
         newColor = Color()
-        while np.array_equal(color1, newColor) or np.array_equal(color2, newColor): newColor = Color()
+        while np.array_equal(color1, newColor) or not contrast(color2, newColor): newColor = Color()
         color1 = newColor
 
 # Looks like a cylon's eyes
@@ -148,8 +253,30 @@ def cylon(color = RED, duration = np.inf):
         for pixel in tree:
             dist = abs(pixel.y - center)
             factor = max(10, -130/.3*dist + 130)/130
-            c = factor * color
+            c = [factor * k for k in color]
             pixel.setColor(c)
+        tree.show()
+
+# Fades in and out
+def fade(colors = TRADITIONALCOLORS, midline = 1.5, divisions = 6, amplitude = 1, speed = 1.5, duration = np.inf):
+    startTime = time()
+    if colors == None:
+        Color = lambda: rng.integers(0, 256, 3)
+    else:
+        if type(colors[0]) != list:
+            colors = [colors]
+        Color = lambda: rng.choice(colors)
+    if midline + abs(amplitude) > divisions or midline - abs(amplitude) < 0 or midline < 0:
+        print("Invalid values will lead to invalid colors")
+        return
+    for pixel in tree:
+        pixel.flag = np.array(Color()) / divisions
+        pixel.setColor(pixel.flag)
+    tree.show()
+    while time() - startTime < duration:
+        f = midline + amplitude * np.sin(speed * time())
+        for pixel in tree:
+            pixel.setColor(f * pixel.flag)
         tree.show()
 
 # Courtesy of Nekisha
@@ -161,6 +288,7 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
     fuzzFactor = 1 # 0 for a sharp barrier between colors.  Larger it is from there, the fuzzier the barrier becomes.  Starts glitching after 1.  
     while time() - startTime < duration:
         for z in np.linspace(tree.zMax, tree.zMax - len(colors) * tree.zRange / colorDensity, sections):
+            if time() - startTime >= duration: return
             for pixel in tree:
                 index = int(np.floor((pixel.z - z) / (tree.zRange / colorDensity) + fuzzFactor * rng.random()) % len(colors))
                 if pixel.color == colors[(index + 1) % len(colors)]:
@@ -170,9 +298,10 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
 
 def fire(duration = np.inf):
     startTime = time()
-    one = np.array([75, 75, 0])
-    two = np.array([20, 75, 0])
+    one = np.array([55, 75, 0])
+    two = np.array([10, 75, 0])
     twoone = two - one
+    tree.clear(FLAGSONLY = True)
     def flagNeighbors(flame):
         for neighbor in flame.neighbors:
             if neighbor.z < flame.z and ((neighbor.x - flame.x)**2 + (neighbor.y - flame.y)**2)<.008:
@@ -193,7 +322,10 @@ def fire(duration = np.inf):
             if pixel.z < 1.1*np.cos(0.5*PI*pixel.x)*np.cos(0.5*PI*pixel.y) + 0.3:
                 pixel.setColor(one + twoone * rng.random())
             if pixel.flag > 0:
-                pixel.setColor(RED)
+                if rng.random() < 0.9:
+                    pixel.setColor(RED)
+                else:
+                    pixel.setColor(ORANGE)
                 pixel.flag -= 6
         tree.show()
 
@@ -210,7 +342,7 @@ def imageSlideshow():
     tree.clear()
 
 # A growing and shrinking spear that moves up and down and changes colors
-def pulsatingSphere(colors = None, duration = np.inf):
+def pulsatingSphere(colors = None, dR = 0.035, dH = 0.015, duration = np.inf):
     startTime = time()
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
@@ -220,38 +352,36 @@ def pulsatingSphere(colors = None, duration = np.inf):
         Color = lambda: rng.choice(colors)
     color1 = Color()
     color2 = BLACK
-    while np.array_equal(color1, color2): color2 = Color()
-    height = tree.zMax*0.45
+    while not contrast(color1, color2): color2 = Color()
+    height = 0.45 * tree.zMax + 0.1 * rng.random()
     minH = tree.zMin
     maxH = tree.zMax
-    deltaH = 0.015
     maxR = .75
     minR = 0.05
     r = 0.31
-    deltaR = 0.03
     while time() - startTime < duration:
         if r <= minR:
-            deltaR = abs(deltaR)
-            r += deltaR
+            dR = abs(dR)
+            r += dR
             color1 = color2
-            while np.array_equal(color1, color2): color1 = rng.choice(COLORS)
+            while not contrast(color1, color2): color1 = rng.choice(COLORS)
         elif r > maxR:
-            deltaR = -abs(deltaR)
-            r += deltaR
+            dR = -abs(dR)
+            r += dR
         if height - r < minH:
-            deltaH = abs(deltaH)
-            height += deltaH
+            dH = abs(dH)
+            height = minH + r
         elif height + r > maxH:
-            deltaH = -abs(deltaH)
-            height += deltaH
+            dH = -abs(dH)
+            height = maxH - r
         for pixel in tree:
-            if (pixel.x**2 + pixel.y**2 + (pixel.z-height)**2)**0.5 <= r:
+            if (pixel.x**2 + pixel.y**2 + (pixel.z - height)**2) <= r**2:
                 pixel.setColor(color1)
             else:
                 pixel.setColor(color2)
         tree.show()
-        r += deltaR
-        height += deltaH
+        r += dR
+        height += dH
 
 # Radial gradient that flows outward
 def radialGradient(colors = [RED, GREEN], duration = np.inf):
@@ -260,7 +390,7 @@ def radialGradient(colors = [RED, GREEN], duration = np.inf):
         colors = [rng.integers(0, 256, 3), rng.integers(0, 256, 3)]
     else:
         if type(colors[0]) != list or len(colors) != 2:
-            print("Must supply exactly 2 colors for this effect")
+            print(colors, "Must supply exactly 2 colors for this effect")
             return
     colors[0] = np.array(colors[0])
     colors[1] = np.array(colors[1])
@@ -281,53 +411,31 @@ def radialGradient(colors = [RED, GREEN], duration = np.inf):
         tree.show()
 
 # A raining effect
-def rain(color = CYAN, speed = 0.35, wind = -0.2, duration = np.inf):
+def rain(color = CYAN, speed = 0.35, wind = -0.2, dropCount = 8, accumulationSpeed = 0, duration = np.inf):
     startTime = time()
-    dropCount = 8
-    radius = 0.08
-    newDrop = lambda: [rng.random()*TAU, rng.random()*tree.zMax + tree.zMax]
-    drops = [newDrop() for i in range(dropCount)]
+    width = 0.12
+    height = 0.15
+    floor = tree.zMin - 0.1
+    newDrop = lambda floor: [rng.random()*TAU, rng.random()*(tree.zMax-floor) + tree.zMax]
+    drops = [newDrop(floor) for i in range(dropCount)]
     while time() - startTime < duration:
         for i, drop in enumerate(drops):
             drop[1] -= speed
             drop[0] = (drop[0] + wind) % TAU
-            if drop[1] < tree.zMin:
+            if drop[1] < floor:
                 del drops[i]
-                drops.append(newDrop())
+                drops.append(newDrop(floor))
                 continue
             for pixel in tree:
-                if pixel.surface and abs(pixel.a - drop[0]) < 0.1 and abs(pixel.z - drop[1]) < radius:
+                if (pixel.z < floor
+                    or (pixel.surface
+                        and abs(pixel.a - drop[0]) < width
+                        and abs(pixel.z - drop[1]) < height)):
                     pixel.setColor(color)
         tree.show()
         tree.fade(0.7)
-#rain()
-
-# Turns lights on one at a time in random order in random colors, then turns them off in the same fashion
-def randomFill(colors = COLORS, cycles = 99999):
-    if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            # Assume function was provided a single color, make a list with just that color
-            colors = [colors]
-        Color = lambda: rng.choice(colors)
-    tree.clear()
-    on = 0
-    for cycle in range(cycles):
-        while on < tree.LED_COUNT:
-            i = rng.integers(0, tree.LED_COUNT)
-            if tree[i].color == OFF:
-                on += 1
-                tree[i] = Color()
-                tree.show()
-        sleep(1)
-        while on > 0:
-            i = rng.integers(0, tree.LED_COUNT)
-            if not tree[i].color == OFF:
-                on -= 1
-                tree[i] = OFF
-                tree.show()
-        sleep(1)
+        floor += accumulationSpeed
+        if floor >= tree.zMax: floor = 0
 
 # Random colored planes fly through the tree, leaving trails
 def randomPlanes(colors = COLORS, duration = np.inf):
@@ -340,14 +448,14 @@ def randomPlanes(colors = COLORS, duration = np.inf):
         Color = lambda: rng.choice(colors)
     sections = 50 # Larger = slower
     while time() - startTime < duration:
-        angleZ = rng.random() *TAU
+        angleZ = rng.random() * TAU
         angleX = rng.random() * PI
         newCoords = transform(tree.coordinates, xr = angleX, zr = angleZ)
         minZ = min(newCoords, key = lambda i: i[2])[2]
         maxZ = max(newCoords, key = lambda i: i[2])[2]
         zStep = (maxZ - minZ) / sections
         factor = 0.8 * rng.random() # Randomized fade speed
-        tree.clear(False)
+        tree.clear(UPDATE = False)
         color = Color()
         for z in np.linspace(minZ, maxZ + 1.5, sections):
             for i in range(len(newCoords)):
@@ -356,35 +464,10 @@ def randomPlanes(colors = COLORS, duration = np.inf):
             tree.show()
             tree.fade(factor)
 
-# Rapid flashing of blue and yellow
-def seizure(duration = np.inf):
-    startTime = time()
-    while time() - startTime < duration:
-        tree.fill(BLUE)
-        tree.show()
-        tree.clear()
-        tree.fill(YELLOW)
-        tree.show()
-        tree.clear()
-
-# Lights up each LED in their wiring order
-def sequence(colors = None, cycles = 1):
-    for cycle in range(cycles):
-        if colors == None:
-            color = rng.integers(0, 256, 3)
-        else:
-            if type(colors[0]) != list:
-                colors = [colors]
-            color = rng.choice(colors)
-        tree.clear()
-        for pixel in tree:
-            pixel.setColor(color)
-            tree.show()
-
 # Plays the game "snake"
 def snake(cycles = 99999):
     for cycle in range(cycles):
-        tree.clear(False)
+        tree.clear(UPDATE = False)
         snake = [rng.choice(tree)]
         pellet = rng.choice(tree)
         visited = [] # Prevents loops
@@ -399,11 +482,15 @@ def snake(cycles = 99999):
                 # And the neighbor hasn't already been visited this cycle
                 # and there either isn't a destination yet
                     # or this neighbor is closer to the pellet than the current destination
-                if (neighbor not in snake
-                    and neighbor not in visited
-                    and (destination == None
-                         or np.linalg.norm(neighbor.coordinate - pellet.coordinate) < np.linalg.norm(destination.coordinate - pellet.coordinate))):
-                    destination = neighbor
+                if (neighbor == pellet
+                    or (neighbor not in snake
+                        and neighbor not in visited
+                        and (destination == None
+                             or np.linalg.norm(neighbor.coordinate - pellet.coordinate) < np.linalg.norm(destination.coordinate - pellet.coordinate)))):
+                    freeSpots = 0
+                    for neigh in neighbor.neighbors:
+                        if neigh not in snake and neigh not in visited: freeSpots += 1
+                    if neighbor == pellet or freeSpots >= 1: destination = neighbor
             if destination == None: # No valid spots to move to
                 break # Snake dies of starvation
             visited += [snake[0]]
@@ -434,7 +521,9 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 0.2, width = 0.15, heigh
                   , TWOCOLORS = False, BACKGROUND = False, SPINNER = False, duration = np.inf):
     startTime = time()
     if colors == None:
-        colors = [rng.integers(0, 256, 3), rng.integers(0, 256, 3)]
+        color1, color2 = rng.integers(0, 256, 3), rng.integers(0, 256, 3)
+        while not contrast(color1, color2): color2 = rng.integers(0, 256, 3)
+        colors = [color1, color2]
     else:
         if type(colors[0]) != list:
             colors = [colors]
@@ -483,10 +572,11 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 0.2, width = 0.15, heigh
         tree.show()
         t += speed
 
+# Makes spirals
 def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
-             , variant = 1, spinCount = 2, sections = 30, spinSpeed = -.1, SURFACE = False
+             , variant = 1, spinCount = 2, zSpeed = 1, spinSpeed = -2, SURFACE = False
              , SKIPBLACK = True, GENERATEINSTANTLY = False, GENERATETOGETHER = False, ENDAFTERSPIRALS = False
-             , PRECLEAR = True, POSTCLEAR = False, ONLYSPINAFTERDONE = False
+             , PRECLEAR = True, POSTCLEAR = False, SPINAFTERDONE = False
              , duration = np.inf, cycles = 1):
     startTime = time()
     if variant**2 != 1: # variant determines which way the spirals slope.  1 = positive slope, -1 = negative slope
@@ -499,34 +589,38 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     totalAngle = TAU * spiralCount # Total angle drawn by each spiral
     spiralH = sectionH / spiralCount # Vertical height of each spiral
     spiralDistBetweenTops = spiralCount * spiralH # Vertical distance between top of the same spiral at corresponding points 2π radians apart
-    dz = tree.zRange / sections
-    spiral, cycle, angleOffset, z = 0, 0, 0, dz
+    spiral, cycle, angleOffset, z = 0, 0, 0, 0
     while colors[spiral] == OFF: spiral += 1
+    # Precomputing some values becaues this function sometimes gets laggy
+    m1 = sectionH / TAU
+    m2 = -TAU / sectionH
+    m2sp1 = m2**2 + 1
     # Gives the height of the top of the spiral being worked on, with respect to angle in the tree
-    spiralTop = lambda angle, z: angle * sectionH / TAU + sectionH * (z // sectionH)
-    spiralTerminus =  lambda angle, z: z - (TAU / sectionH) * (angle - TAU * z / sectionH)
-    def getAngle(angle, z):
-        while angle < TAU * (spinCount + 1):
-            if z < angle * sectionH / TAU and z > angle * sectionH / TAU - spiralH:
-                return angle
-            angle += TAU
-        return angle % TAU
+    spiralTop      = lambda angle, z: m1*angle + sectionH*(z // sectionH)
+    # Gives the height of the spiral front with respect to the angle in the tree - to make leading edge neater
+    spiralTerminus = lambda angle, z: m2*angle + m2sp1*z
+    loopStart = time()
     while time() - startTime < duration:
-        if PRECLEAR or spinSpeed != 0: tree.clear(False)
-        for pixel in tree: # Sets correct color for each pixel
+        loopStart = time()
+        if PRECLEAR or spinSpeed != 0: tree.clear(UPDATE = False)
+        for pixel in tree: # Sets correct color for each pixels
             angle = (pixel.a + angleOffset) % TAU
-            zModH = pixel.z % sectionH
-            m = int(((zModH - variant * angle * sectionH / TAU) // spiralH) % spiralCount)
-            if (GENERATEINSTANTLY or DONE or m < spiral) and not (GENERATETOGETHER and not DONE) and (not SURFACE or pixel.surface):
-                if SKIPBLACK and colors[m] != OFF: pixel.setColor(colors[m])
+            m = int(((pixel.z % sectionH - variant * angle * sectionH / TAU) // spiralH) % spiralCount)
+            if SKIPBLACK and colors[m] == BLACK: continue
+            if ((GENERATEINSTANTLY or DONE or m < spiral) # Safe to draw this spiral in full
+                and not (GENERATETOGETHER and not DONE) # Above condition is wrong if GENERATETOGETHER and not DONE
+                and (not SURFACE or pixel.surface)): # Avoid setting interior pixels if SURFACE
+                pixel.setColor(colors[m])
             else:
                 pixel.flag = m
         if not GENERATEINSTANTLY and not DONE:
             for pixel in tree:
-                for spi in range(*[[spiral, spiral + 1], [0, spiralCount]][GENERATETOGETHER]):
+                for spi in range(*[[spiral, spiral + 1], [spiralCount]][GENERATETOGETHER]):
                     if SKIPBLACK and colors[spi] == OFF: continue
-                    topOfSpiral = spiralTop((pixel.a + angleOffset - (spi+1)*dTheta) % TAU, pixel.z)
-                    spiralEdge = spiralTerminus(getAngle((pixel.a + angleOffset - (spi+1)*dTheta) % TAU, pixel.z), z)
+                    angle = (variant * (pixel.a + angleOffset - variant * (spi+1)*dTheta)) % TAU
+                    topOfSpiral = spiralTop(angle, pixel.z)
+                    angle += TAU * (((pixel.z - m1*angle) // sectionH) + 1)
+                    spiralEdge = spiralTerminus(angle, z)
                     if (pixel.z < spiralEdge
                         and ((pixel.z <= topOfSpiral
                               and pixel.z > topOfSpiral - spiralH)
@@ -535,11 +629,11 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                         and (not SURFACE or pixel.surface)):
                         pixel.setColor(colors[pixel.flag])
         tree.show()
-        if (not ONLYSPINAFTERDONE or DONE): angleOffset = (angleOffset + spinSpeed) % TAU
-        if z < tree.zRange: # Mid-stripe, increase z and continue
-            z += dz
+        if (not SPINAFTERDONE or DONE): angleOffset = (angleOffset + spinSpeed * (time() - loopStart)) % TAU
+        if GENERATEINSTANTLY or DONE: continue
+        if z < tree.zRange: z += zSpeed * (time() - loopStart) # Mid-stripe, increase z and continue
         else: # Stripe is complete
-            z = dz # Reset z
+            z = 0 # Reset z
             if spiral < spiralCount: # If we aren't done
                 spiral += 1 # Then move on to the next stripe
                 while spiral < spiralCount and SKIPBLACK and colors[spiral] == OFF: # Option to skip black because it just keeps the pixels off
@@ -553,7 +647,7 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                 if cycle >= cycles: # Unless that was the last cycle
                     DONE = True # In which case we're done drawing spirals and just spin
                     if ENDAFTERSPIRALS:
-                        if POSTCLEAR: tree.clear(False)
+                        if POSTCLEAR: tree.clear(UPDATE = False)
                         return # Or done entirely if that flag was set
                 else:
                     spiral = 0 # If that wasn't the last cycle, start the drawing process over
@@ -570,8 +664,8 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
             return
         color1, color2 = colors[0], colors[1]
     radius = .4 # Of the spotlight
-    radius *= radius
-    z = tree.zMax * rng.random() * 0.8# Spotlight's z-coordinate
+    radiusS = radius**2
+    z = tree.zMax * rng.random() * 0.6 # Spotlight's z-coordinate
     dz = .2 * rng.random()
     theta = TAU * rng.random() # Spotlight's angle around z-axis
     dTheta = .2 * rng.random()
@@ -581,11 +675,11 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
     while time() - startTime < duration:
         z += dz
         theta += dTheta
-        if z > tree.zMax:dz = -abs(dz) # It tends to get stuck at the top, give it a little push
-        if z < 0: dz = abs(dz)
+        if z + radius > tree.zMax:dz = -abs(dz)
+        if z - radius < 0: dz = abs(dz)
         point = [(m*z+b)*np.cos(theta), (m*z+b)*np.sin(theta)] + [z] # On or near surface of tree
         for pixel in tree:
-            if pixel.surface and (pixel.x - point[0])**2 + (pixel.y - point[1])**2 + (pixel.z - point[2])**2 < radius:
+            if pixel.surface and (pixel.x - point[0])**2 + (pixel.y - point[1])**2 + (pixel.z - point[2])**2 < radiusS:
                 pixel.setColor(color1)
             else:
                 pixel.setColor(color2)
@@ -593,36 +687,8 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
         dz = min(.1, max(-.1, dz + .06*rng.random() - 0.03))
         dTheta = min(.1, max(-.1, dTheta + .06*rng.random() - 0.03))
 
-# Rotates vertical stripes around the tree while changing the color of every other stripe
-def stripedFill(duration = np.inf):
-    startTime = time()
-    numberOfStripes = 3
-    angleDiff = TAU / numberOfStripes
-    stripeThickness = PI/3 # In radians
-    stripeThickness /= 2
-    zStep = 0.0003
-    staticColor = (70, 10, 10)
-    firstColor = (5, 90, 5)
-    secondColor = staticColor
-    z = tree.zMin
-    while time() - startTime < duration:
-        for angle in np.linspace(0, angleDiff, 40):
-            for pixel in tree:
-                if abs(abs(abs((pixel.a % angleDiff) - angle) - angleDiff/2) - angleDiff/2) < stripeThickness:
-                    pixel.setColor(staticColor)
-                else:
-                    if z > tree.zMax or z < tree.zMin:
-                        z = tree.zMin
-                        firstColor, secondColor = secondColor, firstColor
-                    z += zStep
-                    if pixel.z < z:
-                        pixel.setColor(firstColor)
-                    else:
-                        pixel.setColor(secondColor)
-            tree.show()
-
 # Sweeps colors around the tree
-def sweep(colors = COLORS, duration = np.inf):
+def sweep(colors = COLORS, sections = 30, CLOCKWISE = False, ALTERNATE = True, duration = np.inf):
     startTime = time()
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
@@ -630,31 +696,29 @@ def sweep(colors = COLORS, duration = np.inf):
         if type(colors[0]) != list:
             colors = [colors]
         Color = lambda: rng.choice(colors)
-    sections = 30
+    pixelsPerSection = tree.LED_COUNT // sections + 1
     color = Color()
     newColor = Color()
+    a = [1, -1][CLOCKWISE]
+    section = 0
     while time() - startTime < duration:
-        while np.array_equal(newColor, color): newColor = Color()
-        for i in range(sections + 1):
-            for pixel in tree:
-                if pixel.a < TAU*i/sections:
-                    pixel.setColor(newColor)
-            tree.show()
-        color = newColor
-        sleep(1)
+        for i in range(a*section*pixelsPerSection, a*(section+1)*pixelsPerSection, a):
+            if i > tree.LED_COUNT - 1 or i < -tree.LED_COUNT: break
+            tree[tree.sortedA[i]].setColor(color)
+        tree.show()
+        section += 1
+        if section >= sections:
+            section = 0
+            if ALTERNATE: a *= -1
+            while not contrast(newColor, color): newColor = Color()
+            color = newColor
+            sleep(1)
 
 # Sets all LEDs randomly then lets their brightness vary
-def twinkle(variant = 0, color = [50, 50, 50], intensity = 0, duration = np.inf):
+def twinkle(colors = TRADITIONALCOLORS, intensity = 0, duration = np.inf):
     startTime = time()
-    if variant == 0:
-        setAll(color)
-    elif variant == 1:
-        setAllRandom(TREECOLORS)
-    else:
-        setAllRandom(COLORS)
-    if variant != 0:
-        for pixel in tree:
-            pixel.setColor([k/2 for k in pixel.color])
+    setAllRandom(colors)
+    tree.clear(FLAGSONLY = True)
     while time() - startTime < duration:
         for pixel in tree:
             if pixel.flag == 0 and rng.random() < 0.03:
@@ -669,51 +733,48 @@ def twinkle(variant = 0, color = [50, 50, 50], intensity = 0, duration = np.inf)
         tree.show()
 
 # Sets all LEDs at random then lets their colors gradually change
-def wander(colors = None, duration = np.inf):
+def wander(colors = None, slowness = 15, duration = np.inf):
     startTime = time()
     if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
+        Color = lambda: rng.integers(0, 128, 3)
     else:
         if type(colors[0]) != list:
             colors = [colors]
         Color = lambda: rng.choice(colors)
-    wander = 20
-    for pixel in tree:
-        pixel.setColor(Color())
+    tree.clear(FLAGSONLY = True)
     while time() - startTime < duration:
         for pixel in tree:
-            drift = rng.integers(-wander, wander + 1)
-            pixel.setColor([max(0, min(255, pixel.color[0] + rng.integers(-wander, wander + 1))),
-                            max(0, min(255, pixel.color[1] + rng.integers(-wander, wander + 1))),
-                            max(0, min(255, pixel.color[2] + rng.integers(-wander, wander + 1)))])
+            if pixel.flag == 0:
+                newColor = Color()
+                diff = (newColor - pixel.color) / slowness
+                pixel.flag = [diff, slowness]
+            if pixel.flag != 0:
+                pixel.setColor(pixel.color + pixel.flag[0])
+                pixel.flag[1] -= 1
+                if pixel.flag[1] <= 0:
+                    pixel.flag = 0
         tree.show()
 
 # Spirals out from the tree's z-axis, in rainbow colors
-def zSpiral(twists = 4, cycles = 99999):
+def zSpiral(twists = 8, duration = np.inf, cycles = 99999):
+    startTime = time()
     sections = 100
-    deltaA = TAU * twists / sections
-    # To find minimum and maximum radius
-    radii = [pixel.r for pixel in tree]
-    deltaR = (max(radii)-min(radii))/sections
-    Color = lambda i: [255 * max(-3*abs(i/sections - 1/3) + 1.0, 0),
-                       255 * max( 3*abs(i/sections - 0.5) - 0.5, 0),
-                       255 * max(-3*abs(i/sections - 2/3) + 1.0, 0)]
+    totalAngle = TAU * twists
+    dA = totalAngle / sections
+    dR = tree[tree.sortedR[-1]].r - tree[tree.sortedR[0]].r
+    minR = tree[tree.sortedR[0]].r
+    Color = lambda i: [255 * max(min(-3*abs(i/sections - 1/3) + 1.0, 1), 0),
+                       255 * max(min( 3*abs(i/sections - 0.5) - 0.5, 1), 0),
+                       255 * max(min(-3*abs(i/sections - 2/3) + 1.0, 1), 0)]
     for cycle in range(cycles):
-        tree.clear(False)
-        angle = 0
-        r = min(radii)
-        for i in range(sections):
-            color = Color(i)
+        tree.clear(UPDATE = False)
+        angle = dA
+        for i in range(1 + sections + sections // twists):
+            color = Color(i - sections // 10)
             for pixel in tree:
-                if (pixel.a - angle) % TAU <= deltaA:
-                    if pixel.r < r + deltaR and pixel.r > r - deltaR * (TAU / deltaA):
+                if (pixel.a - (angle % TAU)) % TAU <= dA:
+                    if pixel.color == OFF and pixel.r < minR + dR*angle/totalAngle:
                         pixel.setColor(color)
             tree.show()
-            angle = (angle + deltaA) % TAU
-            r += deltaR
-            tree.show()
-        for angle in np.linspace(0, TAU, sections//twists):
-            for pixel in tree:
-                if pixel.color == OFF and pixel.a <= angle:
-                    pixel.setColor(RED)
+            angle += dA
             tree.show()

@@ -41,7 +41,7 @@ def connectivityTest():
     tree.show()
     input()
     for pixel in tree:
-        tree.clear(False)
+        tree.clear(UPDATE = False)
         pixel.setColor(RED)
         for neighbor in pixel.neighbors:
             neighbor.setColor(GREEN)
@@ -78,7 +78,7 @@ def sortedPlanarTest(variant = "a"):
     aRange = TAU / sections
     if variant == "a":
         for a in np.linspace(0, TAU, sections + 1):
-            tree.clear(False)
+            tree.clear(UPDATE = False)
             for pixel in tree:
                 if pixel.a >= a and pixel.a <= a + aRange:
                     pixel.setColor(WHITE)
@@ -87,7 +87,7 @@ def sortedPlanarTest(variant = "a"):
             input()
     elif variant == "x":
         for x in np.linspace(tree.xMin, tree.xMax, sections + 1):
-            tree.clear(False)
+            tree.clear(UPDATE = False)
             for pixel in tree:
                 if pixel.x >= x and pixel.x <= x + xRange:
                     pixel.setColor(WHITE)
@@ -96,7 +96,7 @@ def sortedPlanarTest(variant = "a"):
             input()
     elif variant == "y":
         for y in np.linspace(tree.yMin, tree.yMax, sections + 1):
-            tree.clear(False)
+            tree.clear(UPDATE = False)
             for pixel in tree:
                 if pixel.y >= y and pixel.y <= y + yRange:
                     pixel.setColor(WHITE)
@@ -105,7 +105,7 @@ def sortedPlanarTest(variant = "a"):
             input()
     elif variant == "z":
         for z in np.linspace(tree.zMin, tree.zMax, sections + 1):
-            tree.clear(False)
+            tree.clear(UPDATE = False)
             for pixel in tree:
                 if pixel.z >= z and pixel.z <= z + zRange:
                     pixel.setColor(WHITE)
