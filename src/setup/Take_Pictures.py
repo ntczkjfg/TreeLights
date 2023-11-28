@@ -24,6 +24,15 @@ def next(i, j):
     pixels.show()
     print(str(j) + "/" + (str("00") + str(i))[-3:], end = ", ")
 
+def calibrate():
+    pixels.fill(ON)
+    pixels.show()
+    camera.start_preview(alpha = 230)
+    input("Press enter to end calibration...")
+    pixels.fill(OFF)
+    pixels.show()
+    camera.stop_preview()
+
 # Takes a picture of each LED in sequence.
 # Does that 8 times in a row, for 8 different angles.
 # Rotate tree 45° clockwise between each round of photos.

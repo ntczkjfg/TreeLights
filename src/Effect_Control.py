@@ -254,6 +254,76 @@ def show(setEffect = None, duration = 30, QUICK = False):
             slowness = 0.3 + rng.random()
             blink(colors = colors, groups = groups, slowness = slowness, p = p, duration = duration)
 
+# Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
+def unmappedShow(setEffect = None, duration = 90, QUICK = False):
+    if QUICK:
+        quickShow()
+        return
+    oldEffect = 0
+    effect = 0
+    cycles = 1
+    while True:
+        while effect == oldEffect: effect = rng.integers(1, 9)
+        oldEffect = effect
+        if setEffect != None: effect = setEffect
+        print("Effect", effect)
+        # randomFill
+        if effect == 1:
+            randomFill(cycles = cycles)
+        # sequence
+        elif effect == 2:
+            speed = rng.integers(1, 4)
+            sequence(cycles = cycles, speed = speed)
+        # twinkle
+        elif effect == 3:
+            if rng.random() < 0.5:
+                colors = [[100, 100, 100], [100, 100, 100], [100, 0, 0], [0, 0, 100], [0, 0, 100], [100, 0, 100], [0, 50, 100]][rng.integers(0, 7)]
+            else:
+                colors = [COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 4)]
+            intensity = rng.choice(5)
+            twinkle(colors = colors, intensity = intensity, duration = 3*duration)
+        # wander
+        elif effect == 4:
+            colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
+            slowness = 10 + rng.integers(0, 16)
+            wander(colors = colors, slowness = slowness, duration = 3*duration)
+        # setAll
+        elif effect == 5:
+            setAll()
+            sleep(duration)
+        # setAllRandom
+        elif effect == 6:
+            variant = rng.integers(1, 4)
+            colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
+            if variant == 1:
+                speed = 0
+                setAllRandom(colors = colors)
+                sleep(duration)
+                continue
+            elif variant == 2:
+                speed = rng.integers(1, 5)
+            elif variant == 3:
+                speed = rng.integers(50, 100)
+                colors = [[BLUE, WHITE], [RED, GREEN], [YELLOW, PURPLE], [WHITE, GREEN]
+                          , [ORANGE, BLUE], [RED, RED, RED, WHITE, WHITE, WHITE, BLUE, BLUE]][rng.integers(0, 6)]
+            setAllRandom(colors = colors, speed = speed, duration = duration)
+        # fade
+        elif effect == 7:
+            colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
+            divisions = rng.integers(5, 12)
+            midline = divisions // 2 + rng.choice([-1, 1])
+            amplitude = min(midline, divisions - midline) * min(rng.random() + 0.3, 1) * rng.choice([-1, 1])
+            speed = rng.integers(1, 3) + 0.5 * rng.random()
+            fade(colors = colors, divisions = divisions, midline = midline, amplitude = amplitude, speed = speed, duration = 2*duration)
+        # blink
+        elif effect == 8:
+            colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
+            groups = rng.integers(5, 15)
+            p = 0.5 + 0.35 * rng.random()
+            slowness = 0.3 + rng.random()
+            blink(colors = colors, groups = groups, slowness = slowness, p = p, duration = duration)
+
+
 if __name__ == "__main__":
     pass
     tree[0].a = 0
