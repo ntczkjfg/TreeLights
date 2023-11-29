@@ -283,5 +283,5 @@ def calc():
         pickle.dump(coordinates, f)
     print(coordinates)
 
-#analyzeImages()
-#calc()
+analyzeImages()
+calc()
