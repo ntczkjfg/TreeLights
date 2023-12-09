@@ -85,19 +85,30 @@ def gradient(colors = COLORS, variant = None, backwards = False, speed = 10, dur
 
 # Makes the tree pizza
 def pizza():
-    pepperoniCount = 5
+    pepperoniCount = 50
     pepperoniRadius = 1/8
     crustHeight = 0.7
     cheeseColor = [140, 255, 0]
     crustColor = [12, 64, 0]
     for pixel in tree:
-        if pixel.z < crustHeight or pixel.x < 0:
+        if pixel.x < 0 or pixel.z < crustHeight:
             pixel.setColor(crustColor)
         else:
             pixel.setColor(cheeseColor)
+    pepperonis = []
     for pepperoni in range(pepperoniCount):
-        pepperoniHeight = crustHeight + rng.random()*(tree.zMax - crustHeight)
+        pepperoniHeight = crustHeight + pepperoniRadius**0.5 + rng.random()*(tree.zMax - crustHeight)
         pepperoniY = tree.yMin + rng.random() * (tree.yMax - tree.yMin)
+        add = True
+        for oldPepperoni in pepperonis:
+            if ((oldPepperoni[0]-pepperoniY)**2 + (oldPepperoni[1]-pepperoniHeight)**2)**0.5 < 6.5*pepperoniRadius:
+                add = False
+                break
+        if add:
+            pepperonis.append([pepperoniY, pepperoniHeight])
+    for pepperoni in pepperonis:
+        pepperoniY = pepperoni[0]
+        pepperoniHeight = pepperoni[1]
         for pixel in tree:
             if (pixel.surface
                 and pixel.x > 0

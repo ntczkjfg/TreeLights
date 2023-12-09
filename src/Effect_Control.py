@@ -241,11 +241,10 @@ def show(setEffect = None, duration = 30, QUICK = False):
         # fade
         elif effect == 32:
             colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
-            divisions = rng.integers(5, 12)
-            midline = divisions // 2 + rng.choice([-1, 1])
-            amplitude = min(midline, divisions - midline) * min(rng.random() + 0.3, 1) * rng.choice([-1, 1])
+            midline = .3 + .4*rng.random() # .3 to .7, this is also the maximum value of amplitude
+            amplitude = min(1.2*midline*max(.6*midline, rng.random()), midline) # Give it a 20% chance of maxing out
             speed = rng.integers(1, 3) + 0.5 * rng.random()
-            fade(colors = colors, divisions = divisions, midline = midline, amplitude = amplitude, speed = speed, duration = 2*duration)
+            fade(colors = colors, midline = midline, amplitude = amplitude, speed = speed, duration = 2*duration)
         # blink
         elif effect == 33:
             colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
@@ -327,4 +326,4 @@ def unmappedShow(setEffect = None, duration = 90, QUICK = False):
 if __name__ == "__main__":
     pass
     tree[0].a = 0
-    show()
+    show(12, duration = 4)

@@ -1,4 +1,4 @@
-from Common_Variables import rng, tree, PI, TAU
+from Common_Variables import rng, tree, PI, TAU, newTree
 from Colors import *
 from Simple_Effects import *
 from Helper_Functions import *
@@ -69,50 +69,113 @@ def findFloor():
             pixel.setColor(RED)
     tree.show()
 
+def lightSlice(n, dim, width = 0.015):
+    for pixel in tree:
+        if abs(pixel.coord[dim] - tree[n].coord[dim]) < width:
+            pixel.setColor(WHITE)
+        else:
+            pixel.setColor(OFF)
+    tree[n].setColor(GREEN)
+    tree.show()
+
+def adjustLight(n, dim):
+    dims = ["x", "y", "z"]
+    if dim not in dims:
+        print("""Must specify "x", "y", or "z" dimension""")
+        return
+    dim = dims.index(dim)
+    if n < 0 or n >= tree.LED_COUNT:
+        print("Given n is outside of acceptable range.")
+        return
+    while True:
+        lightSlice(n, dim)
+        print("Current " + str(dims[dim]) + "-coord: " + str(tree[n].coord[dim]))
+        delta = input("Increase (+) or decrease (-)? ")
+        if delta == "":
+            break
+        elif delta == "+":
+            delta = .02
+        elif delta == "-":
+            delta = -.02
+        else:
+            continue
+        tree[n].coord[dim] += delta
+    save = input("Save (y/n)? ")
+    if save not in ["y", "Y"]:
+        return
+    coordinates = []
+    for pixel in tree:
+        coordinates.append(pixel.coord)
+    newTree(coordinates)
+    print("Saved")
+
 # Lights up thin planar slices of the tree in sorted directions
-def sortedPlanarTest(variant = "a"):
-    sections = 25
-    zRange = tree.zRange / sections
-    xRange = tree.xRange / sections
-    yRange = tree.yRange / sections
-    aRange = TAU / sections
-    if variant == "a":
-        for a in np.linspace(0, TAU, sections + 1):
-            tree.clear(UPDATE = False)
-            for pixel in tree:
-                if pixel.a >= a and pixel.a <= a + aRange:
-                    pixel.setColor(WHITE)
-            tree.show()
-            print("Showing angle from", round(a, 5), "to", round(a + aRange, 5))
-            input()
-    elif variant == "x":
-        for x in np.linspace(tree.xMin, tree.xMax, sections + 1):
-            tree.clear(UPDATE = False)
-            for pixel in tree:
-                if pixel.x >= x and pixel.x <= x + xRange:
-                    pixel.setColor(WHITE)
-            tree.show()
-            print("Showing x from", round(x, 5), "to", round(x + xRange, 5))
-            input()
-    elif variant == "y":
-        for y in np.linspace(tree.yMin, tree.yMax, sections + 1):
-            tree.clear(UPDATE = False)
-            for pixel in tree:
-                if pixel.y >= y and pixel.y <= y + yRange:
-                    pixel.setColor(WHITE)
-            tree.show()
-            print("Showing y from", round(y, 5), "to", round(y + yRange, 5))
-            input()
-    elif variant == "z":
-        for z in np.linspace(tree.zMin, tree.zMax, sections + 1):
-            tree.clear(UPDATE = False)
-            for pixel in tree:
-                if pixel.z >= z and pixel.z <= z + zRange:
-                    pixel.setColor(WHITE)
-            tree.show()
-            print("Showing z from", round(z, 5), "to", round(z + zRange, 5))
-            input()
+def planeTest(variant = "z"):
+    sections = 20
+    propertyIndex = ["x", "y", "z", "a"].index(variant)
+    minVal = [-1, -1, 0, 0][propertyIndex]
+    increment = [2/sections, 2/sections, tree.zMax/sections, TAU / sections][propertyIndex]
+    try:
+        if variant == "a":
+            for a in np.linspace(0, TAU, sections + 1):
+                tree.clear(UPDATE = False)
+                for pixel in tree:
+                    if pixel.a >= a and pixel.a <= a + increment:
+                        pixel.setColor(WHITE)
+                tree.show()
+                print("Showing angle from", round(a, 5), "to", round(a + increment, 5))
+                input()
+        else:
+            for i in range(sections):
+                cMin = i*increment + minVal
+                cMax = cMin + increment
+                tree.clear(UPDATE = False)
+                for pixel in tree:
+                    if pixel.coord[propertyIndex] >= cMin and pixel.coord[propertyIndex] <= cMax:
+                        pixel.setColor(WHITE)
+                tree.show()
+                print("Showing", variant, "from", round(cMin, 5), "to", round(cMax, 5))
+                input()
+    except KeyboardInterrupt:
+        binary(SLEEP = 0.2)
+        x = input()
+        x = "0b" + x
+        x = int(x, 2)
+        adjustLight(x, variant)
     tree.clear()
+
+# Lights up thin planar slices of the tree in sorted directions
+def planeTest2(sections = 12, variant = "x"):
+    propertyIndex = ["x", "y", "z"].index(variant)
+    minVal = [-1, -1, 0][propertyIndex]
+    increment = [2/sections, 2/sections, tree.zMax/sections][propertyIndex]
+    tree.clear(UPDATE = False)
+    color = GREEN
+    text = "Boundaries: -1"
+    for i in range(sections):
+        if color == RED:
+            color = GREEN
+        elif color == GREEN:
+            color = BLUE
+        else:
+            color = RED
+        cMin = i*increment + minVal
+        cMax = cMin + increment
+        text += ", " + str(cMax)
+        for pixel in tree:
+            if cMin <= pixel.coord[propertyIndex] and pixel.coord[propertyIndex] <= cMax:
+                pixel.setColor(color)
+    tree.show()
+    print(text)
+    x = input()
+    if x == "":
+        return
+    binary(SLEEP = 0.2)
+    x = input()
+    x = "0b" + x
+    x = int(x, 2)
+    adjustLight(x, variant)
+    planeTest2(sections, variant)
 
 # Turns on lights one-by-one in the sorted directions
 def sortedTest(colors = None):

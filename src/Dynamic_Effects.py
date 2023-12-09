@@ -258,7 +258,9 @@ def cylon(color = RED, duration = np.inf):
         tree.show()
 
 # Fades in and out
-def fade(colors = TRADITIONALCOLORS, midline = 1.5, divisions = 6, amplitude = 1, speed = 1.5, duration = np.inf):
+def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, duration = np.inf):
+    # midline and amplitude define a sine function determining brightness as the light fades
+    # It will reject a sine with a minimum below 0 or maximum above 1
     startTime = time()
     if colors == None:
         Color = lambda: rng.integers(0, 256, 3)
@@ -266,15 +268,17 @@ def fade(colors = TRADITIONALCOLORS, midline = 1.5, divisions = 6, amplitude = 1
         if type(colors[0]) != list:
             colors = [colors]
         Color = lambda: rng.choice(colors)
-    if midline + abs(amplitude) > divisions or midline - abs(amplitude) < 0 or midline < 0:
-        print("Invalid values will lead to invalid colors")
+    amplitude = abs(amplitude)
+    if midline < 0 or midline > 1 or amplitude > midline:
+        print("Midline must be between 0 and 1, amplitude cannot be larger than midline")
         return
     for pixel in tree:
-        pixel.flag = np.array(Color()) / divisions
-        pixel.setColor(pixel.flag)
-    tree.show()
+        pixel.flag = np.array(Color())
     while time() - startTime < duration:
-        f = midline + amplitude * np.sin(speed * time())
+        f = max(0, min(1, midline + amplitude * np.sin(speed * time())))
+        if f <= 0.003:
+            for pixel in tree:
+                pixel.flag = np.array(Color())
         for pixel in tree:
             pixel.setColor(f * pixel.flag)
         tree.show()
@@ -595,30 +599,31 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     m1 = sectionH / TAU
     m2 = -TAU / sectionH
     m2sp1 = m2**2 + 1
-    # Gives the height of the top of the spiral being worked on, with respect to angle in the tree
-    spiralTop      = lambda angle, z: m1*angle + sectionH*(z // sectionH)
     # Gives the height of the spiral front with respect to the angle in the tree - to make leading edge neater
     spiralTerminus = lambda angle, z: m2*angle + m2sp1*z
     loopStart = time()
+    for pixel in tree:
+        pixel.flag = [None, sectionH*(pixel.z // sectionH)]
     while time() - startTime < duration:
         loopStart = time()
-        if PRECLEAR or spinSpeed != 0: tree.clear(UPDATE = False)
-        for pixel in tree: # Sets correct color for each pixels
+        if PRECLEAR or spinSpeed != 0:
+            for pixel in tree:
+                pixel.setColor(OFF)
+        for pixel in tree: # Sets correct color for each pixel
             angle = (pixel.a + angleOffset) % TAU
             m = int(((pixel.z % sectionH - variant * angle * sectionH / TAU) // spiralH) % spiralCount)
             if SKIPBLACK and colors[m] == BLACK: continue
+            pixel.flag[0] = colors[m]
             if ((GENERATEINSTANTLY or DONE or m < spiral) # Safe to draw this spiral in full
                 and not (GENERATETOGETHER and not DONE) # Above condition is wrong if GENERATETOGETHER and not DONE
                 and (not SURFACE or pixel.surface)): # Avoid setting interior pixels if SURFACE
                 pixel.setColor(colors[m])
-            else:
-                pixel.flag = m
         if not GENERATEINSTANTLY and not DONE:
             for pixel in tree:
                 for spi in range(*[[spiral, spiral + 1], [spiralCount]][GENERATETOGETHER]):
                     if SKIPBLACK and colors[spi] == OFF: continue
                     angle = (variant * (pixel.a + angleOffset - variant * (spi+1)*dTheta)) % TAU
-                    topOfSpiral = spiralTop(angle, pixel.z)
+                    topOfSpiral = m1*angle + pixel.flag[1]
                     angle += TAU * (((pixel.z - m1*angle) // sectionH) + 1)
                     spiralEdge = spiralTerminus(angle, z)
                     if (pixel.z < spiralEdge
@@ -627,7 +632,12 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                              or (pixel.z <= topOfSpiral + spiralDistBetweenTops
                                  and pixel.z > topOfSpiral + spiralDistBetweenTops - spiralH))
                         and (not SURFACE or pixel.surface)):
-                        pixel.setColor(colors[pixel.flag])
+                        try:
+                            pixel.setColor(pixel.flag[0])
+                        except:
+                            print(pixel.flag)
+                            x = 1/0
+                        break
         tree.show()
         if (not SPINAFTERDONE or DONE): angleOffset = (angleOffset + spinSpeed * (time() - loopStart)) % TAU
         if GENERATEINSTANTLY or DONE: continue
@@ -745,9 +755,10 @@ def wander(colors = None, slowness = 15, duration = np.inf):
     while time() - startTime < duration:
         for pixel in tree:
             if pixel.flag == 0:
+                newSlowness = slowness + rng.integers(-1, 4)
                 newColor = Color()
-                diff = (newColor - pixel.color) / slowness
-                pixel.flag = [diff, slowness]
+                diff = (newColor - pixel.color) / newSlowness
+                pixel.flag = [diff, newSlowness]
             if pixel.flag != 0:
                 pixel.setColor(pixel.color + pixel.flag[0])
                 pixel.flag[1] -= 1
