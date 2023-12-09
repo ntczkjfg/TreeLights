@@ -3,27 +3,35 @@ import numpy as np
 import pickle
 import platform
 if platform.system() == "Windows":
+    import matplotlib.pyplot as plt
     PATH = "C:/Users/User/My Stuff/GitHub/TreeLights/Trees/"
 elif platform.system() == "Linux":
     PATH = "/home/pi/Desktop/TreeLights/Trees/"
 else:
     print("Unknown operating system.", platform.system())
 
+if platform.system() == "Windows":
+    treeFileName = "winTree.tree"
+elif platform.system() == "Linux":
+    treeFileName = "myTree.tree"
 rng = np.random.default_rng()
 PI = float(np.pi)
 TAU = 2*PI
 tree = None
 
 # Generates a new tree with user-supplied coordinates
-def newTree(coordinates = None):
+def newTree(coordinates = None, sameCoords = False):
     global tree
+    if sameCoords:
+        with open(PATH + "coordinates.list", "rb") as f:
+            coordinates = pickle.load(f)
     if not coordinates:
         print("Error: Must supply coordinates.")
         return
     with open(PATH + "coordinates.list", "wb") as f:
         pickle.dump(coordinates, f)
     tree = Tree(coordinates)
-    with open(PATH + "myTree.tree", "wb") as f:
+    with open(PATH + treeFileName, "wb") as f:
         pickle.dump(tree, f)
     tree.finishNeighbors()
 
@@ -42,16 +50,20 @@ def rebuildTree(save = True):
         coordinates = pickle.load(f)
     tree = Tree(coordinates)
     if save:
-        with open(PATH + "myTree.tree", "wb") as f:
+        with open(PATH + treeFileName, "wb") as f:
             pickle.dump(tree, f)
     tree.finishNeighbors()
 
 # Loads pickled tree - significantly faster than building from scratch
-def savedTree(name):
+def savedTree(treeFileName):
     global tree
-    with open(PATH + name + ".tree", "rb") as f:
+    with open(PATH + treeFileName, "rb") as f:
         tree = pickle.load(f)
     tree.finishNeighbors()
 
 if __name__ != "__main__":
-    savedTree("myTree")
+    if platform.system() == "Windows":
+        savedTree(treeFileName)
+        plt.show(block = False)
+    elif platform.system() == "Linux":
+        savedTree(treeFileName)

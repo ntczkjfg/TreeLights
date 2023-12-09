@@ -29,7 +29,7 @@ class FakeTree:
         height = width#np.max(self.coords[:, 2])/2 * width
         self.fig = plt.figure(figsize=(width, height), dpi=100)
         # Set title bar
-        self.fig.canvas.set_window_title("TreeLights")
+        #self.fig.canvas.set_window_title("TreeLights")
         # I don't want any red to show, but it helps me size the window
         self.fig.set_facecolor('red')
         
@@ -88,6 +88,7 @@ class FakeTree:
             self.cam = (self.ax.azim, self.ax.elev, self.ax.dist)
             self.update_point_sizes()
         self.scatter.set_facecolors(self.colors)
+        plt.draw()
         mypause(0.001)
     
     # Change a color without updating it on the display
@@ -110,7 +111,7 @@ class FakeTree:
         min_dist = np.min(dists)
         normalized_dists = 1 - 2 * (dists - min_dist) / (max_dist - min_dist)
         # Have sizes range from 1 to 21
-        self.sizes = 10*normalized_dists+11
+        self.sizes = 25*normalized_dists+26
         # Actually change the sizes
         self.scatter.set_sizes(self.sizes)
         # This only gets called when self.show() is, so no need to draw

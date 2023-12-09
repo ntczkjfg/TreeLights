@@ -579,7 +579,7 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 0.2, width = 0.15, heigh
 # Makes spirals
 def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
              , variant = 1, spinCount = 2, zSpeed = 1, spinSpeed = -2, SURFACE = False
-             , SKIPBLACK = True, GENERATEINSTANTLY = False, GENERATETOGETHER = False, ENDAFTERSPIRALS = False
+             , SKIPBLACK = True, GENERATEINSTANTLY = False, GENERATETOGETHER = True, ENDAFTERSPIRALS = False
              , PRECLEAR = True, POSTCLEAR = False, SPINAFTERDONE = False
              , duration = np.inf, cycles = 1):
     startTime = time()
@@ -599,11 +599,12 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     m1 = sectionH / TAU
     m2 = -TAU / sectionH
     m2sp1 = m2**2 + 1
-    # Gives the height of the spiral front with respect to the angle in the tree - to make leading edge neater
-    spiralTerminus = lambda angle, z: m2*angle + m2sp1*z
     loopStart = time()
     for pixel in tree:
         pixel.flag = [None, sectionH*(pixel.z // sectionH)]
+    npA = np.array([pixel.a for pixel in tree])
+    npZ = np.array([pixel.z for pixel in tree])
+    npSpirals = np.array([[i] for i in range(spiralCount)])
     while time() - startTime < duration:
         loopStart = time()
         if PRECLEAR or spinSpeed != 0:
@@ -619,13 +620,21 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                 and (not SURFACE or pixel.surface)): # Avoid setting interior pixels if SURFACE
                 pixel.setColor(colors[m])
         if not GENERATEINSTANTLY and not DONE:
+            
+            #npAngle = variant * (npSpirals + 1) * dTheta
+            npAngle = (variant * (npA + angleOffset - variant * (npSpirals + 1)*dTheta)) % TAU
+            npTopOfSpiral = m1*npAngle + sectionH * (npZ // sectionH)
+            npAngle += TAU * (((npZ - m1*npAngle) // sectionH) + 1)
+            npSpiralEdge = m2*npAngle + m2sp1*z
             for pixel in tree:
                 for spi in range(*[[spiral, spiral + 1], [spiralCount]][GENERATETOGETHER]):
                     if SKIPBLACK and colors[spi] == OFF: continue
-                    angle = (variant * (pixel.a + angleOffset - variant * (spi+1)*dTheta)) % TAU
-                    topOfSpiral = m1*angle + pixel.flag[1]
-                    angle += TAU * (((pixel.z - m1*angle) // sectionH) + 1)
-                    spiralEdge = spiralTerminus(angle, z)
+                    #angle = (variant * (pixel.a + angleOffset - variant * (spi+1)*dTheta)) % TAU
+                    #topOfSpiral = m1*angle + pixel.flag[1]
+                    #angle += TAU * (((pixel.z - m1*angle) // sectionH) + 1)
+                    #spiralEdge = m2*angle + m2sp1*z
+                    topOfSpiral = npTopOfSpiral[spi][pixel.i]
+                    spiralEdge = npSpiralEdge[spi][pixel.i]
                     if (pixel.z < spiralEdge
                         and ((pixel.z <= topOfSpiral
                               and pixel.z > topOfSpiral - spiralH)
