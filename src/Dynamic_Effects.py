@@ -715,10 +715,10 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
         angle = (tree.a + angleOffset) % TAU
         m = ((tree.z % sectionH - variant*angle*sectionH/TAU) // spiralH) % spiralCount
         m = m.astype(int)
-        drawNow = ((GENERATEINSTANTLY or DONE or m < spiral)
-                   & ~(GENERATETOGETHER & ~DONE)
-                   & (~SURFACE | tree.s)
-                   & (SKIPBLACK & ~np.all(npColors[m] == BLACK)))
+        drawNow = ((GENERATEINSTANTLY | DONE | (m < spiral))
+                   & ((not GENERATETOGETHER) or DONE)
+                   & ((not SURFACE) | tree.s)
+                   & (SKIPBLACK & ~np.all(npColors[m] == BLACK, axis=1)))
         drawNow = np.where(drawNow)[0]
         for i in drawNow:
             tree[i].setColor(colors[m[i]])
@@ -733,7 +733,7 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                                  & (tree.z > npTopOfSpiral[spi] - spiralH))
                                 | ((tree.z <= npTopOfSpiral[spi] + spiralDistBetweenTops)
                                    & (tree.z > npTopOfSpiral[spi] + spiralDistBetweenTops - spiralH)))
-                                & (~SURFACE | tree.s))
+                             & ((not SURFACE) | tree.s))
                 condition = np.where(condition)[0]
                 for i in condition:
                     tree[i].setColor(colors[m[i]])

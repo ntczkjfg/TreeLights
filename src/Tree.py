@@ -26,9 +26,12 @@ class Tree:
         self.yMax = 0
         self.zMin = 1000
         self.zMax = 0
+        self.rMin = 1000
+        self.rMax = 0
+        self.aMin = 1000
+        self.aMax = 0
         self.pixels = []
         self.coordinates = []
-        self.polarCoords = []
         totalDist = 0
         for i, coordinate in enumerate(coordinates):
             if coordinate[0] == 0:
@@ -40,16 +43,16 @@ class Tree:
                               (coordinates[i][2] - coordinates[i-1][2])**2)**0.5
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
             self.coordinates.append(coordinate)
-            self.polarCoords.append([self.pixels[i].r, self.pixels[i].a])
             if self.pixels[i].x < self.xMin: self.xMin = self.pixels[i].x
             if self.pixels[i].y < self.yMin: self.yMin = self.pixels[i].y
             if self.pixels[i].z < self.zMin: self.zMin = self.pixels[i].z
+            if self.pixels[i].r < self.rMin: self.rMin = self.pixels[i].r
+            if self.pixels[i].a < self.aMin: self.aMin = self.pixels[i].a
             if self.pixels[i].x > self.xMax: self.xMax = self.pixels[i].x
             if self.pixels[i].y > self.yMax: self.yMax = self.pixels[i].y
             if self.pixels[i].z > self.zMax: self.zMax = self.pixels[i].z
-        self.coordinates = np.array(self.coordinates)
-        self.polarCoords = np.array(self.polarCoords)
-        self.coords = np.concatenate((self.coordinates, self.polarCoords), axis = 1)
+            if self.pixels[i].r > self.rMax: self.rMax = self.pixels[i].r
+            if self.pixels[i].a > self.aMax: self.aMax = self.pixels[i].a
         self.x = np.array([pixel.x for pixel in self])
         self.y = np.array([pixel.y for pixel in self])
         self.z = np.array([pixel.z for pixel in self])
