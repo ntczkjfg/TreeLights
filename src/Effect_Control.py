@@ -151,10 +151,12 @@ def show(setEffect = None, duration = 30, QUICK = False):
         # spotlight
         elif effect == 15:
             spotlight(duration = 3*duration)
-        # stripedFill
+        # alternatingStripes
         elif effect == 16:
             colors = [[[200, 30, 30], CYAN, PURPLE], [[0, 10, 90], [5, 90, 5], [70, 15, 15]]][rng.integers(0, 2)]
-            alternatingStripes(colors = colors, duration = duration)
+            stripeCount = rng.choice([2, 2, 2, 2, 3, 3, 3, 4, 4])
+            spinSpeed = rng.choice([-1, 1]) * (PI/4 + rng.random() * 3*PI/4)
+            alternatingStripes(*colors, stripeCount = stripeCount, spinSpeed = spinSpeed, duration = duration)
         # twinkle
         elif effect == 17:
             if rng.random() < 0.5:
@@ -326,4 +328,4 @@ def unmappedShow(setEffect = None, duration = 90, QUICK = False):
 if __name__ == "__main__":
     pass
     tree[0].a = 0
-    show(12, duration = 4)
+    show()

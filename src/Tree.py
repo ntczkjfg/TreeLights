@@ -28,14 +28,19 @@ class Tree:
         self.zMax = 0
         self.pixels = []
         self.coordinates = []
+        self.polarCoords = []
         totalDist = 0
         for i, coordinate in enumerate(coordinates):
-            if i != self.LED_COUNT - 1:
-                totalDist += ((coordinates[i][0] - coordinates[i+1][0])**2 +
-                              (coordinates[i][1] - coordinates[i+1][1])**2 +
-                              (coordinates[i][2] - coordinates[i+1][2])**2)**0.5
+            if coordinate[0] == 0:
+                # Because pixel angle is calculated with arctan, which divides by x
+                coordinate[0] = 0.0001
+            if i != 0:
+                totalDist += ((coordinates[i][0] - coordinates[i-1][0])**2 +
+                              (coordinates[i][1] - coordinates[i-1][1])**2 +
+                              (coordinates[i][2] - coordinates[i-1][2])**2)**0.5
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
             self.coordinates.append(coordinate)
+            self.polarCoords.append([self.pixels[i].r, self.pixels[i].a])
             if self.pixels[i].x < self.xMin: self.xMin = self.pixels[i].x
             if self.pixels[i].y < self.yMin: self.yMin = self.pixels[i].y
             if self.pixels[i].z < self.zMin: self.zMin = self.pixels[i].z
@@ -43,6 +48,13 @@ class Tree:
             if self.pixels[i].y > self.yMax: self.yMax = self.pixels[i].y
             if self.pixels[i].z > self.zMax: self.zMax = self.pixels[i].z
         self.coordinates = np.array(self.coordinates)
+        self.polarCoords = np.array(self.polarCoords)
+        self.coords = np.concatenate((self.coordinates, self.polarCoords), axis = 1)
+        self.x = np.array([pixel.x for pixel in self])
+        self.y = np.array([pixel.y for pixel in self])
+        self.z = np.array([pixel.z for pixel in self])
+        self.a = np.array([pixel.a for pixel in self])
+        self.r = np.array([pixel.r for pixel in self])
         avgDist = totalDist / (self.LED_COUNT - 1)
         self.xRange = self.xMax - self.xMin
         self.yRange = self.yMax - self.yMin
@@ -84,6 +96,7 @@ class Tree:
             self.pixels[self.sortedR[i]].rIndex = i
             if self.pixels[i].r > (m * self.pixels[i].z + b) - 0.05:
                 self.pixels[i].surface = True
+        self.s = np.array([pixel.surface for pixel in self])
     
     # This function exists because pickling the tree fails with a RecursionError exception if the neighbors
     # are stored as Pixels - so they're stored as indices, pickled, then changed to Pixels
@@ -224,7 +237,7 @@ class Pixel():
         self.neighbors = []
     
     def setColor(self, color):
-        self.color = list(color)
+        self.color = color
         self.tree.LEDs[self.index] = [self.tree.brightness * k for k in color]
     
     def __repr__(self):
