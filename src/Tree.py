@@ -54,6 +54,9 @@ class Tree(neopixel.NeoPixel):
         self.frame = 0
         self.startTime = 0
         
+        # Used to calculate fps
+        self.frames = 0
+        
         # Lists of LED indices sorted in various ways, plus determine surface LEDs
         self.sortedI = np.arange(self.n) # Sorted by Index
         self.sortedX = np.argsort(self.coordinates[:,0]) # Sorted by x-coordinate
@@ -136,6 +139,7 @@ class Tree(neopixel.NeoPixel):
     
     def show(self, record = False, maxFrames = 1000000):
         self._transmit(bytearray(self._brightness_buffer.tobytes()))
+        self.frames += 1
         if record and self.frame < maxFrames:
             name = "forMatt"
             self.recordToCSV(name)

@@ -8,6 +8,14 @@ from time import sleep
 tree.clear()
 tree.clear()
 
+def fps(func):
+    name = func[:func.index("(")]
+    startTime = time()
+    tree.frames = 0
+    eval(func)
+    duration = round(time() - startTime, 2)
+    print(f"{name}: {tree.frames} frames in {duration} seconds for {round(tree.frames/duration, 1)} fps")
+
 # Puts on a curated show of effects
 def show(setEffect = None, duration = 30, insequence = False, start = 0):
     oldEffect = 0
@@ -41,7 +49,7 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
         elif effect == 5:
             dR = 0.5 + 0.4 * rng.random()
             dH = 0.2 + 0.2 * rng.random()
-            pulsatingSphere(dR = dR, dH = dH, duration = 3*duration)
+            fps(f"pulsatingSphere(dR = {dR}, dH = {dH}, duration = {3*duration})")
         # randomFill
         elif effect == 6:
             speed = rng.integers(75, 150)
@@ -173,10 +181,13 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
         # twinkle
         elif effect == 17:
             if rng.random() < 0.5:
-                colors = [[100, 100, 100], [100, 100, 100], [100, 0, 0], [0, 0, 100], [0, 0, 100], [100, 0, 100], [0, 50, 100]][rng.integers(0, 7)]
+                colors = [[100, 100, 100], [100, 100, 100], [0, 100, 0], [0, 0, 100], [0, 0, 100], [0, 100, 100], [50, 0, 100]][rng.integers(0, 7)]
             else:
                 colors = [COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 4)]
-            intensity = rng.choice(5)
+            if rng.random() < 0.5:
+                intensity = rng.uniform(1.2, 2)
+            else:
+                intensity = rng.uniform(10, 20)
             twinkle(colors = colors, intensity = intensity, duration = 3*duration)
         # wander
         elif effect == 18:
@@ -214,6 +225,7 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             variant = rng.integers(1, 4)
             colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
             setAllRandom(colors = colors)
+            sleep(duration)
         # sweep
         elif effect == 24:
             speed = rng.uniform(4, 7)
