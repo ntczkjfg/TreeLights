@@ -44,7 +44,6 @@ def alternatingStripes(backgroundC = [0, 10, 90], stripe1C = [5, 90, 5], stripe2
     stripe1C = np.array(stripe1C)
     stripe2C = np.array(stripe2C)
     backgroundC = np.array(backgroundC)
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -80,9 +79,6 @@ def alternatingStripes(backgroundC = [0, 10, 90], stripe1C = [5, 90, 5], stripe2
         for i in stripe2:
             tree[i].setColor(stripe2C)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"alternatingStripes: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Blinks lights on and off
 def blink(colors = TRADITIONALCOLORS, groupCount = 7, p = 0.7, delay = 1, duration = np.inf):
@@ -95,7 +91,6 @@ def blink(colors = TRADITIONALCOLORS, groupCount = 7, p = 0.7, delay = 1, durati
     groups = rng.integers(0, groupCount, tree.n)
     oldGroups = np.array([True for i in range(groupCount)])
     dt = 0
-    frames = 0
     while time() - startTime < duration:
         dt += time() - lastTime
         lastTime = time()
@@ -113,9 +108,6 @@ def blink(colors = TRADITIONALCOLORS, groupCount = 7, p = 0.7, delay = 1, durati
         for i in turnOff:
             tree[i].setColor(OFF)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"blink: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Courtesy of Arby
 # A bouncing rainbow ball that changes size and wobbles
@@ -135,7 +127,6 @@ def bouncingRainbowBall(duration = np.inf):
     acceleration = -0.01
     initialV = 0.21
     dH = initialV
-    frames = 0
     while time() - startTime < duration:
         points = transform(tree.coordinates[:,0:3], z = -height, yr = -zAngle, zr = -angle)
         for i in range(len(points)):
@@ -165,9 +156,6 @@ def bouncingRainbowBall(duration = np.inf):
             dH = initialV
         tree.show()
         tree.clear(UPDATE = False)
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"bouncingRainbowBall: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Displays an analogue clock
 def clock(duration = np.inf):
@@ -201,7 +189,6 @@ def clock(duration = np.inf):
     angles = angles % TAU
     oldColors = np.array([BLACK for i in range(tree.n)])
     tree.clear(UPDATE = False)
-    frames = 0
     while time() - startTime < duration:
         newColors = np.array([BLACK for i in range(tree.n)])
         currentTime = datetime.datetime.now()
@@ -243,9 +230,6 @@ def clock(duration = np.inf):
             tree[i].setColor(newColors[i])
         oldColors = newColors
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"clock: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Cylinders that grow tall then wide, then shrink
 def cylinder(colors = COLORS, duration = np.inf):
@@ -281,7 +265,6 @@ def cylinder(colors = COLORS, duration = np.inf):
     vertical = True
     # Used below, needs to be initialized here
     oldCylinder = np.array([])
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -314,9 +297,6 @@ def cylinder(colors = COLORS, duration = np.inf):
             tree[i].setColor(color2)
         oldCylinder = cylinder
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"cylinder: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Looks like a cylon's eyes
 def cylon(color = RED, duration = np.inf):
@@ -328,7 +308,6 @@ def cylon(color = RED, duration = np.inf):
     tree.clear()
     center = 0
     deltaC = 1.7
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -345,9 +324,6 @@ def cylon(color = RED, duration = np.inf):
         for i, pixel in enumerate(tree):
             pixel.setColor(colors[i])
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"cylon: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Fades in and out
 def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, duration = np.inf):
@@ -360,7 +336,6 @@ def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, 
         print("Midline must be between 0 and 1, amplitude cannot be larger than midline")
         return
     pre_fade_buffer = np.concatenate([Color() for _ in range(tree.n)])
-    frames = 0
     while time() - startTime < duration:
         # f is factor, varies sinuosidally
         f = max(0, min(1, midline + amplitude * np.sin(speed * time())))
@@ -368,9 +343,6 @@ def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, 
             pre_fade_buffer = np.concatenate([Color() for _ in range(tree.n)])
         tree.setAll(pre_fade_buffer*f)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"fade: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Randomly restores lights to full brightness while constantly fading
 def fadeRestore(colors = TRADITIONALCOLORS, p = 0.95, halflife = 0.3, duration = np.inf):
@@ -378,7 +350,6 @@ def fadeRestore(colors = TRADITIONALCOLORS, p = 0.95, halflife = 0.3, duration =
     lastTime = startTime
     Color = ColorBuilder(colors)
     color_buffer = np.array([Color() for _ in range(tree.n)])
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -387,9 +358,6 @@ def fadeRestore(colors = TRADITIONALCOLORS, p = 0.95, halflife = 0.3, duration =
         for i in renew:
             tree[i].setColor(color_buffer[i])
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"fadeRestore: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Courtesy of Nekisha
 # Colors fall down from above
@@ -405,7 +373,6 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
     fallSpeed = .35 # units/second
     fuzzFactor = .25 # 0 for a sharp barrier between colors.  Larger it is from there, the fuzzier the barrier becomes.  Starts glitching after 1.
     fuzzedZ = tree.z + fuzzFactor * np.random.uniform(-1, 1, tree.n)
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -413,9 +380,6 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
         indices = (len(colors)*((fuzzedZ - h) % height)/height).astype(np.int32)
         tree.setAll(colors[indices].flatten())
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"fallingColors: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Meant to imitate a fire
 def fire(duration = np.inf):
@@ -432,7 +396,6 @@ def fire(duration = np.inf):
             if neighbor.z < flame.z and ((neighbor.x - flame.x)**2 + (neighbor.y - flame.y)**2)<.008:
                 neighbor.flag = flame.flag - 1
                 if neighbor.flag > 1: flagNeighbors(neighbor)
-    frames = 0
     smokeC = np.array([5, 5, 5])
     while time() - startTime < duration:
         dt = time() - lastTime
@@ -459,9 +422,6 @@ def fire(duration = np.inf):
                     pixel.setColor(ORANGE)
                 pixel.flag -= 6
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"fire: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Displays the images in sequence, requires keyboard input
 def imageSlideshow():
@@ -489,7 +449,6 @@ def pulsatingSphere(colors = None, dR = 0.7, dH = 0.3, duration = np.inf):
     maxR = .75*tree.rMax
     minR = 0
     r = minR
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -515,9 +474,6 @@ def pulsatingSphere(colors = None, dR = 0.7, dH = 0.3, duration = np.inf):
         r += dR*dt
         height += dH*dt
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"pulsatingSphere: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # A raining effect
 def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 0, duration = np.inf):
@@ -528,7 +484,6 @@ def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 
     floor = tree.zMin - 0.1
     newDrop = lambda floor: [rng.random()*TAU, rng.random()*(tree.zMax-floor) + tree.zMax]
     drops = [newDrop(floor) for i in range(dropCount)]
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -546,9 +501,6 @@ def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 
         if floor >= tree.zMax: floor = 0
         tree.show()
         tree.fade(halflife = 0.125, dt = dt)
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"rain: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Random colored planes fly through the tree, leaving trails
 def randomPlanes(colors = COLORS, duration = np.inf):
@@ -557,7 +509,6 @@ def randomPlanes(colors = COLORS, duration = np.inf):
     Color = ColorBuilder(colors)
     z = 10
     maxZ = 0
-    frames = 0
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
@@ -578,15 +529,11 @@ def randomPlanes(colors = COLORS, duration = np.inf):
             tree[i].setColor(color)
         tree.show()
         tree.fade(halflife = factor, dt = dt)
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"randomPlantes: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Plays the game "snake"
 def snake(cycles = np.inf, duration = np.inf):
     startTime = time()
     cycle = 0
-    frames = 0
     while time() - startTime < duration and cycle < cycles:
         tree.clear(UPDATE = False)
         snake = [rng.choice(tree)]
@@ -627,7 +574,6 @@ def snake(cycles = np.inf, duration = np.inf):
                     snake[i].setColor([max(510*(abs(f-0.5) - 1/6), 0), max(765*(-abs(f-1/3)+1/3), 0), max(765*(-abs(f-2/3)+1/3), 0)])
             pellet.setColor(WHITE)
             tree.show()
-            frames += 1
             sleep(0.05)
         for i in range(3): # Death animation
             for segment in snake:
@@ -639,9 +585,6 @@ def snake(cycles = np.inf, duration = np.inf):
             tree.show()
             sleep(0.5)
             cycle += 1
-            frames += 2
-    duration = round(time() - startTime, 2)
-    print(f"snake: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Rotates a plane about some axis
 def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height = tree.zMax / 2
@@ -670,7 +613,6 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height 
         theta = rng.random() * TAU
         phi = rng.random() * PI
     t = 0
-    frames = 0
     while (tt := time()) - startTime < duration:
         dt = tt - lastTime
         lastTime = tt
@@ -697,9 +639,6 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height 
                     tree[i].setColor(OFF)
         t += speed * dt
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"spinningPlane: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Makes spirals
 def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
@@ -733,7 +672,6 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     npZ = np.array([pixel.z for pixel in tree])
     npSpirals = np.array([[i] for i in range(spiralCount)])
     npSpirals = (npSpirals + 1)*dTheta
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -765,7 +703,6 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                 for i in condition:
                     tree[i].setColor(colors[m[i]])
         tree.show()
-        frames += 1
         if (not SPINAFTERDONE or DONE): angleOffset = (angleOffset + spinSpeed * dt) % TAU
         if GENERATEINSTANTLY or DONE:
             if ENDAFTERSPIRALS:
@@ -792,8 +729,6 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
                         return # Or done entirely if that flag was set
                 else:
                     spiral = 0 # If that wasn't the last cycle, start the drawing process over
-    duration = round(time() - startTime, 2)
-    print(f"spirals: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Has a circle wander around the tree
 def spotlight(colors = [WHITE, BLUE], duration = np.inf):
@@ -817,7 +752,6 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
     # m and b used to calculate point on tree's surface from z and theta
     m = tree.xMax / (tree[tree.sortedX[-1]].z - tree[tree.sortedZ[-1]].z)
     b = -m * tree[tree.sortedZ[-2]].z
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -836,9 +770,6 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
         dz = min(dzMax, max(-dzMax, dz + rng.uniform(-.5, .5)))
         dTheta = min(dThetaMax, max(-dThetaMax, dTheta + rng.uniform(-2.2, 2.2)))
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"spotlight: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Sweeps colors around the tree
 def sweep(colors = COLORS, speed = 5, CLOCKWISE = False, ALTERNATE = True, duration = np.inf):
@@ -849,7 +780,6 @@ def sweep(colors = COLORS, speed = 5, CLOCKWISE = False, ALTERNATE = True, durat
     newColor = Color()
     speed = abs(speed)
     angle = 0
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -866,9 +796,6 @@ def sweep(colors = COLORS, speed = 5, CLOCKWISE = False, ALTERNATE = True, durat
         for i in front:
             tree[i].setColor(color)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"sweep: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Sweeps around the tree continuously and smoothly changing colors
 def sweeper(colors = COLORS[1:], speed = 5, sequence = True, duration = np.inf):
@@ -886,7 +813,6 @@ def sweeper(colors = COLORS[1:], speed = 5, sequence = True, duration = np.inf):
         nextColor = Color()
         while not contrast(nextColor, oldColor): nextColor = Color()
     angle = 0
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -903,9 +829,6 @@ def sweeper(colors = COLORS[1:], speed = 5, sequence = True, duration = np.inf):
         for i in front:
             tree[i].setColor(color)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"sweeper: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Sets all LEDs randomly then lets their brightness vary
 def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, duration = np.inf):
@@ -919,7 +842,6 @@ def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, 
     buffer = np.array(tree._pre_brightness_buffer)
     intensity -= 1
     tree.flags = np.full(tree.n, 0.0)
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -935,9 +857,6 @@ def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, 
         new_buffer = buffer * f
         tree.setAll(new_buffer)
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"twinkle: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Has all LEDs let their color wander around at random
 def wander(colors = COLORS, wanderTime = 1, variance = None, duration = np.inf):
@@ -954,7 +873,6 @@ def wander(colors = COLORS, wanderTime = 1, variance = None, duration = np.inf):
     # Add variance to the initial lengths so they aren't synchronized. This is done to avoid lag.
     lengths = lengths + rng.random(tree.n)*wanderTime
     times = np.full(tree.n, time())
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -971,9 +889,6 @@ def wander(colors = COLORS, wanderTime = 1, variance = None, duration = np.inf):
         color_buffer = oldColors + f.T * (newColors - oldColors)
         tree.setAll(color_buffer.flatten())
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"wander: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Draws spirals and winds them up
 def windingSpirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE], maxSpinCount = 4, dSpin = 3, dOffset = 1, duration = np.inf):
@@ -982,7 +897,6 @@ def windingSpirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE], maxSpinC
     variant = 1
     spinCount = 0.01
     offset = 0
-    frames = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -997,9 +911,6 @@ def windingSpirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE], maxSpinC
             spinCount = 0.01
             variant *= -1
             colors.reverse()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"windingSpirals: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Spirals out from the tree's z-axis, in rainbow colors
 def zSpiral(twists = 8, speed = TAU, backwards = True, duration = np.inf, cycles = np.inf):
@@ -1025,7 +936,6 @@ def zSpiral(twists = 8, speed = TAU, backwards = True, duration = np.inf, cycles
     angle = 0
     done = 0
     cycle = 0
-    frames = 0
     while cycle < cycles and (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
@@ -1037,12 +947,9 @@ def zSpiral(twists = 8, speed = TAU, backwards = True, duration = np.inf, cycles
             tree[i].setColor(colors[i])
         done += len(newLights)
         tree.show()
-        frames += 1
         if done == tree.n:
             cycle += 1
             angle = 0
             done = 0
             if cycle != cycles:
                 tree.clear(UPDATE = False)
-    duration = round(time() - startTime, 2)
-    print(f"zSpiral: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")

@@ -170,7 +170,6 @@ def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cyc
     order = np.arange(800) if SEQUENCE else rng.permutation(tree.n)
     tree.clear(UPDATE = False)
     if not EMPTY: setAllRandom(colors = colors)
-    frames = 0
     while (t := time()) - startTime < duration and cycle < cycles:
         dt = t - lastTime
         lastTime = t
@@ -193,22 +192,15 @@ def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cyc
                 limit = tree.n + EMPTY * speed
             cycle += 1
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"randomFill: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Rapid flashing of blue and yellow
 def seizure(duration = np.inf):
     startTime = time()
-    frames = 0
     while time() - startTime < duration:
         tree.fill(BLUE)
         tree.show()
         tree.fill(YELLOW)
         tree.show()
-        frames += 2
-    duration = round(time() - startTime, 2)
-    print(f"seizure: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Sets all LEDs to the same color
 def setAll(colors = None):

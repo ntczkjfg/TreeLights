@@ -113,7 +113,6 @@ def adjustLight(n, dim):
 
 def maxFramerate(duration = 10, variant = 0):
     startTime = time()
-    frames = 0
     while time() - startTime < duration:
         colors = rng.integers(0, 256, 2400)
         colors2 = colors.reshape(800, 3)
@@ -123,9 +122,6 @@ def maxFramerate(duration = 10, variant = 0):
             for i, pixel in enumerate(tree):
                 pixel.setColor(colors2[i])
         tree.show()
-        frames += 1
-    duration = round(time() - startTime, 2)
-    print(f"maxFramerate: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Divide the tree into halves to detect (and fix) misplaced lights
 def planeTest(sections = 20, variant = "y", startAt = 1):

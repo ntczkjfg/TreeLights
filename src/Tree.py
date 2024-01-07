@@ -96,7 +96,6 @@ class Tree(neopixel.NeoPixel):
         else:
             a = 1
             b = 0
-        frames = 0
         while time() - startTime < duration:
             dt = time() - lastTime
             lastTime = time()
@@ -107,9 +106,7 @@ class Tree(neopixel.NeoPixel):
             for i in range(firstCount):
                 self.pixels[index[a*(-(firstCount - i) + b)]].setColor(first[i])
             self.show()
-            frames += 1
-        duration = round(time() - startTime, 2)
-        print("cycle:", frames, "frames in", duration, "seconds for", round(frames/duration, 1), "fps")
+    
     def fade(self, halflife = 0.25, dt = .05):
         f = 0.5**(dt/halflife)
         self._brightness_buffer = np.multiply(self._pre_brightness_buffer, f).astype(np.uint8)
