@@ -6,6 +6,8 @@ from time import time, sleep
 from PIL import Image
 
 def pickle():
+    # Last updated 2022
+    # Use to show position of pickle and ketchup on tree
     tree.clear(UPDATE = False)
     tree[548].setColor(GREEN)
     tree[61].setColor(GREEN)
@@ -18,18 +20,18 @@ def displayImage(fileName, markTemplate = False):
     with Image.open(PATH) as im:
         img = im.load()
         tree.clear(UPDATE = False)
-        for pixel in tree:
-            x = im.size[0] * (-pixel.x + 1) / 2
-            y = im.size[1] - 1 - (im.size[0] * pixel.z / 2)
-            if x < 0 or y < 0 or x > im.size[0] - 1 or y > im.size[1] - 1:
-                continue
+        xs = im.size[0] * (tree.y + 1) / 2
+        ys = im.size[1] - 1 - (im.size[0] * tree.z / 2)
+        do = np.where(np.logical_not((xs < 0) | (ys < 0) | (xs > (im.size[0] - 1)) | (ys > (im.size[1] - 1))))[0]
+        for i in do:
+            x = xs[i]
+            y = ys[i]
             if markTemplate:
                 im.putpixel((int(x), int(y)), (0, 0, 0, 255))
             else:
                 color = list(img[x, y][0:3])
-                color[0], color[1] = color[1], color[0]
-                if color != [28, 237, 36]:
-                    pixel.setColor(color)
+                if color != [237, 28, 36]:
+                    tree[i].setColor(color)
         if markTemplate:
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
@@ -37,221 +39,188 @@ def displayImage(fileName, markTemplate = False):
 # Displays images, but with perspective
 def displayImage2(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
-    eye = np.array([0, 4.5, 2.2])
+    eye = np.array([17, 0, 1.5])
     with Image.open(PATH) as im:
         img = im.load()
         tree.clear(UPDATE = False)
-        for pixel in tree:
-            vect = eye - pixel.coordinate
-            t = -eye[1] / vect[1]
-            x = (-(vect[0]*t + eye[0]) + 1) * im.size[0]/2
-            y = im.size[1] - (vect[2]*t + eye[2])*im.size[1]/tree.zMax
-            if x < 0 or y < 0 or x > im.size[0] - 1 or y > im.size[1] - 1:
-                continue
+        vect = eye - tree.coordinates[:,0:3]
+        t = -eye[0] / vect[:,0]
+        xs = (-(vect[:,1]*t + eye[1]) + 1) * im.size[0] / 2
+        ys = im.size[1] - (vect[:,2]*t + eye[2]) * im.size[1] / tree.zMax
+        do = np.where(np.logical_not((xs < 0) | (ys < 0) | (xs > im.size[0] - 1) | (ys > im.size[1] - 1)))[0]
+        for i in do:
+            x = xs[i]
+            y = ys[i]
             if markTemplate:
                 im.putpixel((int(x), int(y)), (0, 0, 0, 255))
             else:
-                color = list(img[x, y][0:3])
-                color[0], color[1] = color[1], color[0]
-                if color != [28, 237, 36]:
-                    pixel.setColor(color)
+                color = list(img[-x, y][0:3])
+                if color != [237, 28, 36]:
+                    tree[i].setColor(color)
         if markTemplate:
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
 
-def gradient(colors = COLORS, variant = None, backwards = False, speed = 10, duration = 99999):
-    if colors == None:
-        color1 = rng.integers(0, 256, 3)
-        color2 = rng.integers(0, 256, 3)
-        while not contrast(color1, color2): color2 = rng.integers(0, 256, 3)
-        color1 = 255 * color1 / (color1[0] + color1[1] + color1[2])
-        color2 = 255 * color2 / (color2[0] + color2[1] + color2[2])
+# Creates a gradient betwen all the colors specified
+def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, RED], variant = 2, indices = None):
+    if colors is None:
+        Color = lambda: rng.integers(0, 256, 3)
+        color1 = Color()
+        color2 = contrastColor(color1, Color)
+        colors = np.array([color1, color2, color1])
     else:
-        if type(colors[0]) != list or len(colors) < 2:
-            print("You must supply at least two colors for this effect")
-            return
-        color1, color2 = rng.choice(colors, 2, False)
-        while not contrast(color1, color2): color2 = rng.choice(colors)
-    if variant == None: variant = rng.integers(3, 5)
-    index = tree.indices[variant]
-    diff = 2*(color2 - color1)/(tree.LED_COUNT - 1)
-    for i in range(tree.LED_COUNT):
-        if i < tree.LED_COUNT / 2:
-            tree[index[i]] = color1 + i*diff
-        else:
-            tree[index[i]] = tree[index[tree.LED_COUNT - i - 1]].color
+        colors = np.array(colors)
+    if indices is None:
+        if variant is None:
+            variant = rng.integers(1, 6)
+        indices = tree.indices[variant]
+    separation = 1 / (len(colors) - 1)
+    def Color(f):
+        group = int(f/separation)
+        along = (f % separation)/separation
+        return colors[group] + along * (colors[group + 1] - colors[group])
+    for i in indices:
+        tree[indices[i]].setColor(Color(i/tree.n))
     tree.show()
-    tree.cycle(variant, step = speed, backwards = backwards, duration = duration)
 
 # Makes the tree pizza
 def pizza():
-    pepperoniCount = 50
-    pepperoniRadius = 1/8
+    # Pepperonis are randomly generated, and rejected if poorly positioned
+    # Try to make this many - usually only accept 4-7 total
+    pepperoniCount = 200
+    pepperoniRadius = .35
     crustHeight = 0.7
-    cheeseColor = [140, 255, 0]
-    crustColor = [12, 64, 0]
-    for pixel in tree:
-        if pixel.x < 0 or pixel.z < crustHeight:
-            pixel.setColor(crustColor)
-        else:
-            pixel.setColor(cheeseColor)
+    cheeseColor = [255, 140, 0]
+    crustColor = [64, 12, 0]
+    # Entire backside of the pizza plus the bottom part is crust
+    crust = (tree.x < 0) | (tree.z < crustHeight)
+    # Everywhere else is cheese
+    cheese = np.where(np.logical_not(crust))[0]
+    crust = np.where(crust)[0]
+    for i in crust:
+        tree[i].setColor(crustColor)
+    for i in cheese:
+        tree[i].setColor(cheeseColor)
     pepperonis = []
     for pepperoni in range(pepperoniCount):
-        pepperoniHeight = crustHeight + pepperoniRadius**0.5 + rng.random()*(tree.zMax - crustHeight)
-        pepperoniY = tree.yMin + rng.random() * (tree.yMax - tree.yMin)
+        pepperoniZ = crustHeight + pepperoniRadius + rng.random()*(tree.zMax - crustHeight)
+        pepperoniY = (tree.yMin + rng.random() * tree.yRange) / max(1, 3 * pepperoniZ / tree.zMax)
         add = True
         for oldPepperoni in pepperonis:
-            if ((oldPepperoni[0]-pepperoniY)**2 + (oldPepperoni[1]-pepperoniHeight)**2)**0.5 < 6.5*pepperoniRadius:
+            dist = ((oldPepperoni[0]-pepperoniY)**2 + (oldPepperoni[1]-pepperoniZ)**2)**0.5
+            # Any closer and it can look like they're overlapping - ugly
+            if dist < 2.3*pepperoniRadius:
                 add = False
                 break
+        if not add: continue
+        toLight = np.where((tree.x > 0) & (((tree.z-pepperoniZ)**2+(tree.y-pepperoniY)**2) < (pepperoniRadius**2)))[0]
+        # Check if the pepperoni is off-tree
+        # Want to reject these because they'll still prevent other good pepperoni spawns
+        if len(toLight) == 0:
+            add = False
         if add:
-            pepperonis.append([pepperoniY, pepperoniHeight])
+            pepperonis.append([pepperoniY, pepperoniZ, toLight])
     for pepperoni in pepperonis:
-        pepperoniY = pepperoni[0]
-        pepperoniHeight = pepperoni[1]
-        for pixel in tree:
-            if (pixel.surface
-                and pixel.x > 0
-                and ((pixel.z-pepperoniHeight)**2 + (pixel.y-pepperoniY)**2)**0.5 < pepperoniRadius):
-                pixel.setColor(RED)
-                for neighbor in pixel.neighbors:
-                    neighbor.setColor(RED)
+        for i in pepperoni[2]:
+            tree[i].setColor(RED)
     tree.show()
 
 # Displays a pokéball
 def pokeball():
-    tree.fill([25, 25, 0])
+    tree.clear(UPDATE = False)
     height = 1.1
     radius = 0.9
-    for pixel in tree:
-        if (pixel.x**2 + pixel.y**2 + (pixel.z-height)**2)**.5 < radius**2:
-            if pixel.z > height:
-                pixel.setColor(RED)
-            else:
-                pixel.setColor(WHITE)
+    ball = (tree.x**2 + tree.y**2 + (tree.z - height)**2) < radius**2
+    bg = np.where(np.logical_not(ball))[0]
+    top = np.where((tree.z > height) & ball)[0]
+    bottom = np.where((tree.z <= height) & ball)[0]
+    for i in bg:
+        tree[i].setColor([25, 25, 0])
+    for i in top:
+        tree[i].setColor(RED)
+    for i in bottom:
+        tree[i].setColor(WHITE)
     tree.show()
 
-def rainbow(variant = None, cycle = True, duration = 99999):
-    if variant == None: variant = rng.integers(2, 5)
-    speed = 20
-    # Cycles from red to green to blue, for 3*256 total possible colors.
-    # diffBetweenLEDs determines based on LED_COUNT how much to advance
-    # each LED to make this as smooth as possible
-    diffBetweenLEDs = 3*256/(tree.LED_COUNT - 1)
-    # Determines next color in sequence given input color and diffBetweenLEDs
-    def advance(green, red, blue):
-        if red == 0 and blue != 255: # Green falling, blue rising
-            green = max(0, green - diffBetweenLEDs)
-            blue = min(255, blue + diffBetweenLEDs)
-        elif green == 0 and red != 255: # Blue falling, red rising
-            blue = max(0, blue - diffBetweenLEDs)
-            red = min(255, red + diffBetweenLEDs)
-        elif blue == 0 and green != 255: # Red falling, green rising
-            red = max(0, red - diffBetweenLEDs)
-            green = min(255, green + diffBetweenLEDs)
-        return [green, red, blue]
-    # Initial configuration
-    color = [0, 255, 0]
-    index = tree.indices[variant]
-    tree[index[0]] = color
-    for i in range(1, tree.LED_COUNT):
-        color = advance(*color)
-        tree[index[i]] = color
+def trafficCone():
+    # Values determined experimentally
+    topStripeHeight = 0.715*tree.zMax
+    bottomStripeHeight = 0.466*tree.zMax
+    topStripeWidth = 0.124*tree.zMax
+    bottomStripeWidth = topStripeWidth / 2
+    white = (np.abs(tree.z - topStripeHeight) < topStripeWidth) | (np.abs(tree.z - bottomStripeHeight) < bottomStripeWidth)
+    orange = np.where(np.logical_not(white))[0]
+    white = np.where(white)[0]
+    for i in white:
+        tree[i].setColor(WHITE)
+    for i in orange:
+        tree[i].setColor(ORANGE)
     tree.show()
-    if cycle: tree.cycle(variant, step = speed, duration = duration)
 
 # Turns lights on one at a time in random order in random colors, then turns them off in the same fashion
-def randomFill(colors = COLORS, speed = 1, cycles = 99999):
-    if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            # Assume function was provided a single color, make a list with just that color
-            colors = [colors]
-        Color = lambda: rng.choice(colors)
+def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cycles = np.inf, duration = np.inf):
+    startTime = time()
+    lastTime = startTime
+    Color = ColorBuilder(colors)
     tree.clear()
-    order = [i for i in range(tree.LED_COUNT)]
-    for cycle in range(cycles):
-        rng.shuffle(order)
-        for i in range(tree.LED_COUNT // speed + 1):
-            for j in range(speed):
-                index = speed*i + j
-                if index >= tree.LED_COUNT: continue
-                tree[order[index]].setColor(Color())
-            tree.show()
-        sleep(1)
-        rng.shuffle(order)
-        for i in range(tree.LED_COUNT // speed + 1):
-            for j in range(speed):
-                index = speed*i + j
-                if index >= tree.LED_COUNT: continue
-                tree[order[index]].setColor(OFF)
-            tree.show()
-        sleep(1)
+    done = 0
+    cycle = 0
+    ON = True
+    limit = tree.n + EMPTY * speed
+    order = np.arange(800) if SEQUENCE else rng.permutation(tree.n)
+    tree.clear(UPDATE = False)
+    if not EMPTY: setAllRandom(colors = colors)
+    frames = 0
+    while (t := time()) - startTime < duration and cycle < cycles:
+        dt = t - lastTime
+        lastTime = t
+        lightsToDo = max(int(dt*speed), 1)
+        for i in range(min(done, tree.n), min(done + lightsToDo, tree.n)):
+            if ON:
+                tree[order[i]].setColor(Color())
+            else:
+                tree[order[i]].setColor(OFF)
+        done += lightsToDo
+        if done >= limit:
+            done = 0
+            order = np.arange(800) if SEQUENCE else rng.permutation(tree.n)
+            if ON:
+                if EMPTY: ON = False
+                limit = tree.n
+                if SEQUENCE: order = np.flip(order)
+            else:
+                ON = True
+                limit = tree.n + EMPTY * speed
+            cycle += 1
+        tree.show()
+        frames += 1
+    duration = round(time() - startTime, 2)
+    print(f"randomFill: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Rapid flashing of blue and yellow
 def seizure(duration = np.inf):
     startTime = time()
+    frames = 0
     while time() - startTime < duration:
         tree.fill(BLUE)
         tree.show()
-        tree.clear()
         tree.fill(YELLOW)
         tree.show()
-        tree.clear()
-
-# Lights up each LED in their wiring order
-def sequence(colors = None, speed = 1, cycles = 1):
-    for cycle in range(cycles):
-        if colors == None:
-            color = rng.integers(0, 256, 3)
-        else:
-            if type(colors[0]) != list:
-                colors = [colors]
-            color = rng.choice(colors)
-        tree.clear()
-        i = 0
-        for pixel in tree:
-            pixel.setColor(color)
-            i += 1
-            if i % speed == 0 or i == tree.LED_COUNT: tree.show()
+        frames += 2
+    duration = round(time() - startTime, 2)
+    print(f"seizure: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
 # Sets all LEDs to the same color
 def setAll(colors = None):
-    if np.array_equal(colors, None):
-        color = rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            colors = [colors]
-        color = rng.choice(colors)
-    tree.fill(color)
+    Color = ColorBuilder(colors)
+    tree.fill(Color())
     tree.show()
 
 # Sets all LEDs to a random color
-def setAllRandom(colors = None, speed = 0, duration = 99999):
+def setAllRandom(colors = None):
     startTime = time()
-    continuous = speed > 0
-    if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            colors = [colors]
-        Color = lambda: rng.choice(colors)
+    lastTime = startTime
+    Color = ColorBuilder(colors)
     for pixel in tree:
         pixel.setColor(Color())
-    tree.show()
-    while continuous and time() - startTime < duration:
-        for i in range(speed):
-            tree[rng.integers(0, tree.LED_COUNT)].setColor(Color())
-        tree.show()
-
-# Sets an individual LED a given color
-def setPixel(index, colors = None):
-    if colors == None:
-        color = rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            colors = [colors]
-        color = rng.choice(colors)
-    tree[index] = color
     tree.show()

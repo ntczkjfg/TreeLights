@@ -6,12 +6,12 @@ import numpy as np
 from time import sleep, time
 
 # Has each light blink out its index number in binary
-def binary(SLEEP = 1, backwards = False):
-    maxLength = len(bin(tree.LED_COUNT - 1)[2:])
-    binaryReps = [(maxLength * "0" + bin(i)[2:])[-maxLength:] for i in range(tree.LED_COUNT)]
+def binary(SLEEP = .5, backwards = False):
+    maxLength = len(bin(tree.n - 1)[2:])
+    binaryReps = [(maxLength * "0" + bin(i)[2:])[-maxLength:] for i in range(tree.n)]
     if backwards: binaryReps = [rep[::-1] for rep in binaryReps]
     for d in range(maxLength):
-        for i in range(tree.LED_COUNT):
+        for i in range(tree.n):
             if binaryReps[i][d] == "0":
                 tree[i] = RED
             else:
@@ -36,15 +36,15 @@ def connectivityTest():
         if connections == 2:
             loneLEDs += 1
             pixel.setColor(RED)
-    print(totalConnections, "connections among", tree.LED_COUNT, "with", loneLEDs, "neighborless LEDs and", poorlyConnected,
-          "poorly connected LEDs, and an average of", totalConnections/tree.LED_COUNT, "connections per LED")
+    print(totalConnections, "connections among", tree.n, "with", loneLEDs, "neighborless LEDs and", poorlyConnected,
+          "poorly connected LEDs, and an average of", totalConnections/tree.n, "connections per LED")
     tree.show()
     input()
     for pixel in tree:
         tree.clear(UPDATE = False)
         pixel.setColor(RED)
         for neighbor in pixel.neighbors:
-            neighbor.setColor(GREEN)
+            tree[neighbor].setColor(GREEN)
         tree.show()
         input()
     tree.clear()
@@ -62,34 +62,37 @@ def findFloor():
     for pixel in tree:
         lowest = True
         for neighbor in pixel.neighbors:
-            if neighbor.z < pixel.z:
+            if tree[neighbor].z < pixel.z:
                 lowest = False
                 break
         if lowest:
             pixel.setColor(RED)
     tree.show()
 
+# Used by adjustLight below
+# Lights up all LEDs with a similar coordinate to the indicated LED
 def lightSlice(n, dim, width = 0.015):
     for pixel in tree:
-        if abs(pixel.coord[dim] - tree[n].coord[dim]) < width:
+        if abs(pixel.coordinate[dim] - tree[n].coordinate[dim]) < width:
             pixel.setColor(WHITE)
         else:
             pixel.setColor(OFF)
     tree[n].setColor(GREEN)
     tree.show()
 
+# Used to adjust a specific coordinate for a specific light
 def adjustLight(n, dim):
     dims = ["x", "y", "z"]
     if dim not in dims:
         print("""Must specify "x", "y", or "z" dimension""")
         return
     dim = dims.index(dim)
-    if n < 0 or n >= tree.LED_COUNT:
+    if n < 0 or n >= tree.n:
         print("Given n is outside of acceptable range.")
         return
     while True:
         lightSlice(n, dim)
-        print("Current " + str(dims[dim]) + "-coord: " + str(tree[n].coord[dim]))
+        print("Current " + str(dims[dim]) + "-coord: " + str(tree[n].coordinate[dim]))
         delta = input("Increase (+) or decrease (-)? ")
         if delta == "":
             break
@@ -99,138 +102,72 @@ def adjustLight(n, dim):
             delta = -.02
         else:
             continue
-        tree[n].coord[dim] += delta
+        tree[n].coordinate[dim] += delta
     save = input("Save (y/n)? ")
     if save not in ["y", "Y"]:
         return
     coordinates = []
     for pixel in tree:
-        coordinates.append(pixel.coord)
+        coordinates.append(pixel.coordinate)
     newTree(coordinates)
-    print("Saved")
 
-# Lights up thin planar slices of the tree in sorted directions
-def planeTest(variant = "z"):
-    sections = 20
-    propertyIndex = ["x", "y", "z", "a"].index(variant)
-    minVal = [-1, -1, 0, 0][propertyIndex]
-    increment = [2/sections, 2/sections, tree.zMax/sections, TAU / sections][propertyIndex]
-    try:
-        if variant == "a":
-            for a in np.linspace(0, TAU, sections + 1):
-                tree.clear(UPDATE = False)
-                for pixel in tree:
-                    if pixel.a >= a and pixel.a <= a + increment:
-                        pixel.setColor(WHITE)
-                tree.show()
-                print("Showing angle from", round(a, 5), "to", round(a + increment, 5))
-                input()
+def maxFramerate(duration = 10, variant = 0):
+    startTime = time()
+    frames = 0
+    while time() - startTime < duration:
+        colors = rng.integers(0, 256, 2400)
+        colors2 = colors.reshape(800, 3)
+        if variant:
+            tree.setAll(colors)
         else:
-            for i in range(sections):
-                cMin = i*increment + minVal
-                cMax = cMin + increment
-                tree.clear(UPDATE = False)
-                for pixel in tree:
-                    if pixel.coord[propertyIndex] >= cMin and pixel.coord[propertyIndex] <= cMax:
-                        pixel.setColor(WHITE)
-                tree.show()
-                print("Showing", variant, "from", round(cMin, 5), "to", round(cMax, 5))
-                input()
-    except KeyboardInterrupt:
-        binary(SLEEP = 0.2)
-        x = input()
-        x = "0b" + x
-        x = int(x, 2)
-        adjustLight(x, variant)
-    tree.clear()
+            for i, pixel in enumerate(tree):
+                pixel.setColor(colors2[i])
+        tree.show()
+        frames += 1
+    duration = round(time() - startTime, 2)
+    print(f"maxFramerate: {frames} frames in {duration} seconds for {round(frames/duration, 1)} fps")
 
-# Lights up thin planar slices of the tree in sorted directions
-def planeTest2(sections = 12, variant = "x"):
+# Divide the tree into halves to detect (and fix) misplaced lights
+def planeTest(sections = 20, variant = "y", startAt = 1):
     propertyIndex = ["x", "y", "z"].index(variant)
     minVal = [-1, -1, 0][propertyIndex]
     increment = [2/sections, 2/sections, tree.zMax/sections][propertyIndex]
-    tree.clear(UPDATE = False)
-    color = GREEN
-    text = "Boundaries: -1"
-    for i in range(sections):
-        if color == RED:
-            color = GREEN
-        elif color == GREEN:
-            color = BLUE
-        else:
-            color = RED
-        cMin = i*increment + minVal
-        cMax = cMin + increment
-        text += ", " + str(cMax)
+    for boundary in range(startAt, sections + 1):
+        tree.clear(UPDATE = False)
+        boundaryVal = boundary*increment
         for pixel in tree:
-            if cMin <= pixel.coord[propertyIndex] and pixel.coord[propertyIndex] <= cMax:
-                pixel.setColor(color)
-    tree.show()
-    print(text)
-    x = input()
-    if x == "":
+            if pixel.coordinate[propertyIndex] <= minVal + boundaryVal:
+                pixel.setColor(RED)
+            else:
+                pixel.setColor(GREEN)
+        tree.show()
+        if boundary == sections: continue
+        x = input("Enter to continue, anything else to flash binary and fix")
+        if x == "":
+            continue
+        binary(SLEEP = 0.2)
+        x = input()
+        x = int(x, 2)
+        adjustLight(x, variant)
+        planeTest(sections, variant, startAt = boundary)
         return
-    binary(SLEEP = 0.2)
-    x = input()
-    x = "0b" + x
-    x = int(x, 2)
-    adjustLight(x, variant)
-    planeTest2(sections, variant)
 
 # Turns on lights one-by-one in the sorted directions
-def sortedTest(colors = None):
-    if colors == None:
-        Color = lambda: rng.integers(0, 256, 3)
-    else:
-        if type(colors[0]) != list:
-            colors = [colors]
-        Color = lambda: rng.choice(colors)
-    while True:
-        tree.clear()
-        color = Color()
-        for i in tree.sortedX:
-            tree[i].setColor(color)
+def sortedTest(colors = None, speed = 1, variant = "z"):
+    Color = ColorBuilder(colors)
+    index = ["i", "x", "y", "z", "r", "a"].index(variant)
+    order = tree.indices[index]
+    color = Color()
+    for i in order:
+        tree[i].setColor(color)
+        if i % speed == 0:
             tree.show()
-        sleep(1)
-        tree.clear()
-        color = Color()
-        for i in tree.sortedY:
-            tree[i].setColor(color)
-            tree.show()
-        sleep(1)
-        tree.clear()
-        color = Color()
-        for i in tree.sortedZ:
-            tree[i].setColor(color)
-            tree.show()
-        sleep(1)
-        tree.clear()
-        color = Color()
-        for i in tree.sortedA:
-            tree[i].setColor(color)
-            tree.show()
-        sleep(1)
-        tree.clear()
 
 # Illuminates the interior and surface LEDs on the tree in different colors
 def surfaceTest(interior = BLUE, surface = RED):
-    setAll(interior)
     for pixel in tree:
-        if pixel.surface: pixel.setColor(surface)
+        if pixel.surface:
+            pixel.setColor(surface)
+        else:
+            pixel.setColor(interior)
     tree.show()
-
-def coordinateChange(index, coord, value):
-    if coord == 0:
-        tree[index].x = value
-    elif coord == 1:
-        tree[index].y = value
-    elif coord == 2:
-        tree[index].z = value
-    else:
-        print("Invalid coord")
-        return
-    tree[index].coordinate[coord] = value
-    tree.coordinates[index][coord] = value
-    with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "wb") as f:
-        pickle.dump(tree.coordinates, f)
-    rebuildTree(save = True)

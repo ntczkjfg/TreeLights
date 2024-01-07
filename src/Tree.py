@@ -6,161 +6,137 @@ if platform.system() == "Windows":
     import FakeTree as board
 elif platform.system() == "Linux":
     import board
-    from neopixel import NeoPixel as neopixel
+    import neopixel
 else:
     print("Unknown operating system.", platform.system())
 
 LED_PIN = board.D18
 
-class Tree:
+class Tree(neopixel.NeoPixel):
     """The Tree object.  Primary functions:  fill(), clear(), show(), setBrightness(), cycle().
         self.[i] returns the color of the i-th LED and can also be used to set said color."""
     
     def __init__(self, coordinates):
-        self.LEDs = neopixel(LED_PIN, len(coordinates), auto_write = False)
-        self.LED_COUNT = len(coordinates)
-        self.brightness = 1 # ∈(0, 1]
-        self.xMin = 1000
-        self.xMax = 0
-        self.yMin = 1000
-        self.yMax = 0
-        self.zMin = 1000
-        self.zMax = 0
-        self.rMin = 1000
-        self.rMax = 0
-        self.aMin = 1000
-        self.aMax = 0
+        super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = "RGB")
+        self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
+        self._post_brightness_buffer = None
+        self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
         self.coordinates = []
-        totalDist = 0
         for i, coordinate in enumerate(coordinates):
-            if coordinate[0] == 0:
-                # Because pixel angle is calculated with arctan, which divides by x
-                coordinate[0] = 0.0001
-            if i != 0:
-                totalDist += ((coordinates[i][0] - coordinates[i-1][0])**2 +
-                              (coordinates[i][1] - coordinates[i-1][1])**2 +
-                              (coordinates[i][2] - coordinates[i-1][2])**2)**0.5
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
-            self.coordinates.append(coordinate)
-            if self.pixels[i].x < self.xMin: self.xMin = self.pixels[i].x
-            if self.pixels[i].y < self.yMin: self.yMin = self.pixels[i].y
-            if self.pixels[i].z < self.zMin: self.zMin = self.pixels[i].z
-            if self.pixels[i].r < self.rMin: self.rMin = self.pixels[i].r
-            if self.pixels[i].a < self.aMin: self.aMin = self.pixels[i].a
-            if self.pixels[i].x > self.xMax: self.xMax = self.pixels[i].x
-            if self.pixels[i].y > self.yMax: self.yMax = self.pixels[i].y
-            if self.pixels[i].z > self.zMax: self.zMax = self.pixels[i].z
-            if self.pixels[i].r > self.rMax: self.rMax = self.pixels[i].r
-            if self.pixels[i].a > self.aMax: self.aMax = self.pixels[i].a
-        self.x = np.array([pixel.x for pixel in self])
-        self.y = np.array([pixel.y for pixel in self])
-        self.z = np.array([pixel.z for pixel in self])
-        self.a = np.array([pixel.a for pixel in self])
-        self.r = np.array([pixel.r for pixel in self])
-        avgDist = totalDist / (self.LED_COUNT - 1)
+            self.coordinates.append([self.pixels[i].r, self.pixels[i].a])
+        self.coordinates = np.column_stack((coordinates, self.coordinates))
+        totalDist = np.sum(np.sqrt(np.sum((self.coordinates[1:,:3] - self.coordinates[:-1,:3])**2, axis=1)))
+        self.x = self.coordinates[:,0]
+        self.y = self.coordinates[:,1]
+        self.z = self.coordinates[:,2]
+        self.r = self.coordinates[:,3]
+        self.a = self.coordinates[:,4]
+        self.xMin = np.min(self.x)
+        self.yMin = np.min(self.y)
+        self.zMin = np.min(self.z)
+        self.rMin = np.min(self.r)
+        self.aMin = np.min(self.a)
+        self.xMax = np.max(self.x)
+        self.yMax = np.max(self.y)
+        self.zMax = np.max(self.z)
+        self.rMax = np.max(self.r)
+        self.aMax = np.max(self.a)
+        avgDist = totalDist / (self.n - 1)
         self.xRange = self.xMax - self.xMin
         self.yRange = self.yMax - self.yMin
         self.zRange = self.zMax - self.zMin
+        self.rRange = self.rMax - self.rMin
+        self.aRange = self.aMax - self.aMin
         
         # Used when recording effects to CSV
         self.frame = 0
         self.startTime = 0
         
         # Lists of LED indices sorted in various ways, plus determine surface LEDs
-        self.sortedI = [i for i in range(self.LED_COUNT)] # Sorted by Index
-        self.sortedX = sorted(self.sortedI, key = lambda i: self.pixels[i].x) # Sorted by x-coordinate
-        self.sortedY = sorted(self.sortedI, key = lambda i: self.pixels[i].y) # Sorted by y-coordinate
-        self.sortedZ = sorted(self.sortedI, key = lambda i: self.pixels[i].z) # Sorted by z-coordinate
-        self.sortedA = sorted(self.sortedI, key = lambda i: self.pixels[i].a) # Sorted by angle (angle of 0 is along positive x-axis)
-        self.sortedR = sorted(self.sortedI, key = lambda i: self.pixels[i].r) # Sorted by radius
-        self.indices = [self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedA, self.sortedR]
+        self.sortedI = np.arange(self.n) # Sorted by Index
+        self.sortedX = np.argsort(self.coordinates[:,0]) # Sorted by x-coordinate
+        self.sortedY = np.argsort(self.coordinates[:,1]) # Sorted by y-coordinate
+        self.sortedZ = np.argsort(self.coordinates[:,2]) # Sorted by z-coordinate
+        self.sortedR = np.argsort(self.coordinates[:,3]) # Sorted by radius
+        self.sortedA = np.argsort(self.coordinates[:,4]) # Sorted by angle (angle of 0 is along positive x-axis)
+        self.indices = np.array([self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedR, self.sortedA])
         # Following four variables are used to identify LEDs that are on the surface of the tree
         # Assumes tree is conical - calculates linear equation for radius based on z-coordinate
         # Tries to account for outliers
-        maxR = self[self.sortedR[-self.LED_COUNT // 10]].r
+        maxR = self[self.sortedR[-self.n // 10]].r
         maxZ = self[self.sortedZ[-8]].z
         m = -maxR / maxZ
         b = maxR
-        for i in range(self.LED_COUNT):
-            for pixel in self: # This loop identifies neighbors to each pixel - very slow because of nested for loops
-                if pixel.index != i: # Don't count an LED as its own neighbor
-                    if abs(pixel.index - i) == 1: # Automatically count neighbors on the string
-                        self[i].neighbors.append(pixel.index)
-                        continue
-                    d = ((self[i].x - pixel.x)**2 + (self[i].y - pixel.y)**2 + (self[i].z - pixel.z)**2)**0.5
-                    if d <= avgDist:
-                        self[i].neighbors.append(pixel.index)
-            # Might as well set these now
-            self.pixels[self.sortedX[i]].xIndex = i
-            self.pixels[self.sortedY[i]].yindex = i
-            self.pixels[self.sortedZ[i]].zIndex = i
-            self.pixels[self.sortedA[i]].aIndex = i
-            self.pixels[self.sortedR[i]].rIndex = i
-            if self.pixels[i].r > (m * self.pixels[i].z + b) - 0.05:
+        surface = self.r > (m*self.z + b - 0.05)
+        for i in range(self.n):
+            dists = np.sqrt((self[i].x - self.x)**2 + (self[i].y - self.y)**2 + (self[i].z - self.z)**2)
+            neighbors = list(set(np.where(dists < avgDist)[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
+            self[i].neighbors = neighbors
+            if surface[i]:
                 self.pixels[i].surface = True
-        self.s = np.array([pixel.surface for pixel in self])
+        self.s = surface
     
-    # This function exists because pickling the tree fails with a RecursionError exception if the neighbors
-    # are stored as Pixels - so they're stored as indices, pickled, then changed to Pixels
-    def finishNeighbors(self):
-        for pixel in self:
-            for i in range(len(pixel.neighbors)):
-                pixel.neighbors[i] = self[pixel.neighbors[i]]
-    
-    def cycle(self, variant = 0, backwards = False, step = 10, duration = 99999):
+    def cycle(self, index = None, variant = 0, backwards = False, speed = 400, duration = 99999):
         startTime = time()
-        if step == 0: return
-        if step < 0:
-            step *= -1
+        lastTime = startTime
+        if speed == 0: return
+        if speed < 0:
+            speed *= -1
             backwards = not backwards
-        index = self.indices[variant]
+        if index is None:
+            index = self.indices[variant]
         if backwards:
             a = -1
             b = 1
         else:
             a = 1
             b = 0
+        frames = 0
         while time() - startTime < duration:
-            first = [self.pixels[index[a*(i+b)]].color for i in range(step)]
-            for i in range(self.LED_COUNT - step):
-                self.pixels[index[a*(i+b)]].setColor(self.pixels[index[a*(i + step + b)]].color)
-            for i in range(step):
-                self.pixels[index[a*(-(step - i) + b)]].setColor(first[i])
+            dt = time() - lastTime
+            lastTime = time()
+            firstCount = int(speed * dt)
+            first = [self.pixels[index[a*(i+b)]].color for i in range(firstCount)]
+            for i in range(self.n - firstCount):
+                self.pixels[index[a*(i+b)]].setColor(self.pixels[index[a*(i + firstCount + b)]].color)
+            for i in range(firstCount):
+                self.pixels[index[a*(-(firstCount - i) + b)]].setColor(first[i])
             self.show()
-    
-    def fade(self, factor = 0.5):
-        for pixel in self:
-            pixel.setColor([factor * pixel.color[0],
-                            factor * pixel.color[1],
-                            factor * pixel.color[2]])
-    
-    """Accepts a value from 0 to 1"""
-    def setBrightness(self, brightness):
-        if brightness > 0 and brightness <= 1:
-            self.brightness = brightness
-            for pixel in self:
-                pixel.setColor(pixel.color)
-            self.show()
-        else:
-            raise ValueError
+            frames += 1
+        duration = round(time() - startTime, 2)
+        print("cycle:", frames, "frames in", duration, "seconds for", round(frames/duration, 1), "fps")
+    def fade(self, halflife = 0.25, dt = .05):
+        f = 0.5**(dt/halflife)
+        self._brightness_buffer = np.multiply(self._pre_brightness_buffer, f).astype(np.uint8)
     
     def fill(self, color):
-        for pixel in self.pixels:
-            pixel.setColor(color)
+        self._brightness_buffer = np.tile(color, self.n).astype(np.uint8)
     
     def clear(self, UPDATE = True, FLAGSONLY = False):
-        for pixel in self.pixels:
-            pixel.flag = 0
-            if FLAGSONLY: continue
-            pixel.setColor([0, 0, 0])
+        self.flags = np.full(self.n, None, dtype=object)
+        if not FLAGSONLY:
+            self._brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
         if UPDATE and not FLAGSONLY: self.show()
     
+    @property
+    def _brightness_buffer(self):
+        if self._post_brightness_buffer is not None:
+            return self._post_brightness_buffer
+        return self._pre_brightness_buffer
+    
+    @_brightness_buffer.setter
+    def _brightness_buffer(self, buffer):
+        if len(buffer) != self._bytes:
+            raise ValueError
+        self._pre_brightness_buffer = np.array(buffer, dtype=np.uint8)
+        if self._post_brightness_buffer is not None:
+            self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
+    
     def show(self, record = False, maxFrames = 1000000):
-        self.LEDs.show()
+        self._transmit(bytearray(self._brightness_buffer.tobytes()))
         if record and self.frame < maxFrames:
-            import inspect
-            name = inspect.stack()[1].function
             name = "forMatt"
             self.recordToCSV(name)
     
@@ -175,12 +151,10 @@ class Tree:
         if self.frame % 100 == 0:
             print(self.frame, "frames in", time() - self.startTime, "seconds.")
         data = str(self.frame) + ","
-        for i in range(self.LED_COUNT):
-            # Accessing colors directly from self.LEDs because accessing from Pixel object
-            # doesn't account for brightness, plus values from here are already ints
-            data += str(self.LEDs[i][1]) + "," # R
-            data += str(self.LEDs[i][0]) + "," # G
-            data += str(self.LEDs[i][2]) + "," # B
+        for i in range(self.n):
+            data += str(self._brightness_buffer[3*i]) + "," # R
+            data += str(self._brightness_buffer[3*i+1]) + "," # G
+            data += str(self._brightness_buffer[3*i+2]) + "," # B
         with open(PATH + name + ".csv", "a") as f:
             f.write(data[:-1] + "\n") # Remove last comma, add linefeed
         self.frame += 1
@@ -189,60 +163,77 @@ class Tree:
         return str(self.pixels)
     
     def __str__(self):
-        return "Tree object with " + str(self.LED_COUNT) + " LEDs."
-    
-    def __len__(self):
-        return self.LED_COUNT
+        return "Tree object with " + str(self.n) + " LEDs."
     
     def __getitem__(self, key):
         return self.pixels[key]
     
-    def __setitem__(self, key, color):
-        self.pixels[key].setColor(color)
+    def __setitem__(self, index, color):
+        if index < 0:
+            index += self.n
+        if index >= self.n or index < 0:
+            raise IndexError
+        self._pre_brightness_buffer[3*index:3*index+3] = color
+        if self._post_brightness_buffer is not None:
+            self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
     
-    def __iter__(self):
-        self.iter = 0
-        return self
+    def setAll(self, buffer):
+        if len(buffer) != self._bytes:
+            raise ValueError
+        self._brightness_buffer = np.array(buffer, dtype=np.uint8)
     
-    def __next__(self):
-        if self.iter < self.LED_COUNT:
-            result = self.pixels[self.iter]
-            self.iter += 1
-            return result
-        else:
-            raise StopIteration
+    @neopixel.NeoPixel.brightness.setter
+    def brightness(self, value: float):
+        value = min(max(value, 0.0), 1.0)
+        change = value - self._brightness
+        if -0.001 < change < 0.001:
+            return
+        self._brightness = value
+        if self._brightness >= 0.999:
+            self._post_brightness_buffer = None
+            self.show()
+            return
+        self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
+        self.show()
 
 class Pixel():
-    """Description"""
-    
     def __init__(self, tree, index, coordinate):
         self.tree = tree
         self.index = index
         self.i = self.index
         self.coordinate = coordinate
-        self.coord = self.coordinate
-        self.c = self.coordinate
-        self.x = self.coordinate[0]
-        self.y = self.coordinate[1]
-        self.z = self.coordinate[2]
-        self.a = np.arctan(self.y/self.x)# Angles between -π/2 and π/2
-        if self.x < 0: self.a += np.pi # Angles between -π/2 and 3π/2
+        if self.x == 0:
+            if self.y > 0:
+                self.a = np.pi/2
+            elif self.y < 0:
+                self.a = 3*np.pi/2
+            else:
+                self.a = 0
+        else:
+            self.a = np.arctan(self.y/self.x)# Angles between -π/2 and π/2
+            if self.x < 0: self.a += np.pi # Angles between -π/2 and 3π/2
         self.a = self.a % (2*np.pi) # Angles between 0 and 2π
         self.r = (self.x**2 + self.y**2)**0.5
-        self.color = [0, 0, 0]
-        self.xIndex = -1
-        self.yIndex = -1
-        self.zIndex = -1
-        self.aIndex = -1
-        self.rIndex = -1
         self.surface = False
-        self.flag = 0
         self.neighbors = []
     
+    @property
+    def flag(self): return self.tree.flags[self.i]
+    @flag.setter
+    def flag(self, value): self.tree.flags[self.i] = value
+    @property
+    def color(self): return self.tree._pre_brightness_buffer[3*self.i:3*self.i + 3]
+    @color.setter
+    def color(self, color): self.setColor(color)
+    @property
+    def x(self): return self.coordinate[0]
+    @property
+    def y(self): return self.coordinate[1]
+    @property
+    def z(self): return self.coordinate[2]
+    
     def setColor(self, color):
-        self.color = color
-        self.tree.LEDs[self.index] = [self.tree.brightness * k for k in color]
+        self.tree[self.i] = color
     
     def __repr__(self):
         return str([self.index, self.coordinate, self.color])
-    

@@ -9,15 +9,17 @@ tree.clear()
 tree.clear()
 
 # Puts on a curated show of effects
-def show(setEffect = None, duration = 30, QUICK = False):
-    if QUICK:
-        quickShow()
-        return
+def show(setEffect = None, duration = 30, insequence = False, start = 0):
     oldEffect = 0
-    effect = 0
+    effect = start
     cycles = 1
     while True:
-        while effect == oldEffect: effect = rng.integers(1, 34)
+        if insequence:
+            effect += 1
+            if effect > 33:
+                effect = 1
+        else:
+            while effect == oldEffect: effect = rng.integers(1, 34)
         oldEffect = effect
         if setEffect != None: effect = setEffect
         print("Effect", effect)
@@ -37,29 +39,40 @@ def show(setEffect = None, duration = 30, QUICK = False):
             bouncingRainbowBall(duration = 3*duration)
         # pulsatingSphere
         elif effect == 5:
-            dR = 0.025 + 0.02 * rng.random()
-            dH = 0.01 + 0.01 * rng.random()
+            dR = 0.5 + 0.4 * rng.random()
+            dH = 0.2 + 0.2 * rng.random()
             pulsatingSphere(dR = dR, dH = dH, duration = 3*duration)
         # randomFill
         elif effect == 6:
-            randomFill(cycles = cycles)
+            speed = rng.integers(75, 150)
+            randomFill(speed = speed, cycles = 2*cycles, duration = 2*duration)
+        elif effect == 34:
+            speed = rng.integers(200, 600)
+            colors = [[BLUE, WHITE], [RED, GREEN], [YELLOW, PURPLE], [WHITE, GREEN]
+                      , [ORANGE, BLUE], [RED, RED, RED, WHITE, WHITE, WHITE, BLUE, BLUE]][rng.integers(0, 6)]
+            randomFill(colors = colors, speed = speed, EMPTY = False, duration = 3*duration)
         # randomPlanes
         elif effect == 7:
             randomPlanes(duration = 3*duration)
         # sequence
         elif effect == 8:
-            speed = rng.integers(1, 4)
-            sequence(cycles = cycles, speed = speed)
+            variant = rng.integers(0, 10)
+            if variant >= 3:
+                colors = rng.choice(COLORS)
+            else:
+                colors = [COLORS, TRADITIONALCOLORS, TREECOLORS][variant]
+            speed = rng.integers(50, 150)
+            randomFill(SEQUENCE = True, colors = colors, speed = speed, cycles = 2*cycles)
         # snake
         elif effect == 9:
-            snake(cycles = cycles)
+            snake(duration = 3*duration, cycles = cycles)
         # spinningPlane
         elif effect == 10:
             variant = rng.choice([0, 0, 0, 1, 2, 2, 2, 3])
-            speed = 0.1 + 0.25 * rng.random()
+            speed = rng.uniform(2, 7)
             width = 0.1 + 0.2 * rng.random()
             height = rng.choice([0, 0, 0, tree.zMax / 2, tree.zMax / 2, tree.zMax / 2, tree.zMax / 2, tree.zMax / 2, tree.zMax])
-            if height == 0 or height == tree.zMax: speed = 0.1 + 0.1 * rng.random()
+            if height == 0 or height == tree.zMax: speed = rng.uniform(2, 4)
             TWOCOLORS = rng.choice([True, False, False])
             BACKGROUND = rng.choice([True, False, False])
             spinningPlane(variant = variant, speed = speed
@@ -71,7 +84,7 @@ def show(setEffect = None, duration = 30, QUICK = False):
             colors = [[WHITE, BLUE], [RED, GREEN], [CYAN, WHITE], [GREEN, BLUE], [BLUE, YELLOW], [YELLOW, PURPLE], [PURPLE, GREEN]][rng.integers(0, 7)]
             if rng.random() < 0.2: colors[1] = OFF
             variant = rng.integers(0, 4)
-            speed = 0.1 + 0.35 * rng.random()
+            speed = rng.uniform(2, 9)
             spinningPlane(colors = colors, variant = variant, speed = speed, SPINNER = True, duration = duration)
         # spirals
         elif effect == 12:
@@ -114,7 +127,7 @@ def show(setEffect = None, duration = 30, QUICK = False):
                 colors = [RED, WHITE, BLUE]
                 spinCount = 2
             variant = rng.choice([-1, 1])
-            spirals(colors = colors, spinCount = 2, variant = variant, spinSpeed = 0
+            spirals(colors = colors, spinCount = spinCount, variant = variant, spinSpeed = 0
                     , ENDAFTERSPIRALS = True, cycles = cycles, duration = 3*duration)
             sleep(duration/5)
         # spirals (barbershop style)
@@ -168,22 +181,30 @@ def show(setEffect = None, duration = 30, QUICK = False):
         # wander
         elif effect == 18:
             colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
-            slowness = 10 + rng.integers(0, 16)
-            wander(colors = colors, slowness = slowness, duration = 3*duration)
+            wanderTime = .5 + rng.uniform(0, 1.5)
+            wander(colors = colors, wanderTime = wanderTime, duration = 3*duration)
         # zSpiral
         elif effect == 19:
             startTime = time()
-            speed = int(20 + 20 * rng.random())
-            backwards = rng.choice([True, False])
-            zSpiral(cycles = cycles)
-            tree.cycle(variant = 5, step = speed, backwards = backwards, duration = 2*duration - (time() - startTime))
+            twists = rng.integers(4, 10)
+            speed1 = rng.uniform(PI, 3*TAU)
+            speed2 = rng.uniform(300, 500)
+            backwards1 = rng.choice([True, False])
+            backwards2 = rng.choice([True, False])
+            zSpiral(speed = speed1, twists = twists, backwards = backwards1, cycles = cycles)
+            tree.cycle(variant = 4, speed = speed2, backwards = backwards2, duration = 2*duration - (time() - startTime))
         # gradient
         elif effect == 20:
             colors = [None, COLORS][rng.integers(0, 2)]
-            gradient(colors = colors, duration = 3*duration)
+            variant = rng.choice([1, 2, 3, 3, 4, 4, 5, 5])
+            backwards = rng.choice([True, False])
+            gradient(colors = colors, variant = variant)
+            tree.cycle(variant = variant, backwards = backwards, duration = 3*duration)
         # rainbow
         elif effect == 21:
-            rainbow(duration = 3*duration)
+            variant = rng.choice([0, 1, 2, 3, 4, 5])
+            gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, RED], variant = variant)
+            tree.cycle(variant = variant, duration = 3*duration)
         # setAll
         elif effect == 22:
             setAll()
@@ -192,28 +213,22 @@ def show(setEffect = None, duration = 30, QUICK = False):
         elif effect == 23:
             variant = rng.integers(1, 4)
             colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
-            if variant == 1:
-                speed = 0
-                setAllRandom(colors = colors)
-                sleep(duration)
-                continue
-            elif variant == 2:
-                speed = rng.integers(1, 5)
-            elif variant == 3:
-                speed = rng.integers(50, 100)
-                colors = [[BLUE, WHITE], [RED, GREEN], [YELLOW, PURPLE], [WHITE, GREEN]
-                          , [ORANGE, BLUE], [RED, RED, RED, WHITE, WHITE, WHITE, BLUE, BLUE]][rng.integers(0, 6)]
-            setAllRandom(colors = colors, speed = speed, duration = duration)
+            setAllRandom(colors = colors)
         # sweep
         elif effect == 24:
-            sections = rng.integers(20, 41)
-            CLOCKWISE = [True, False][rng.integers(0, 2)]
-            ALTERNATE = [True, False][rng.integers(0, 2)]
-            sweep(sections = sections, CLOCKWISE = CLOCKWISE, ALTERNATE = ALTERNATE, duration = 3*duration)
+            speed = rng.uniform(4, 7)
+            CLOCKWISE = rng.choice([True, False])
+            ALTERNATE = rng.choice([True, False])
+            sweep(speed = speed, CLOCKWISE = CLOCKWISE, ALTERNATE = ALTERNATE, duration = 3*duration)
         # radialGradient
         elif effect == 25:
             colors = [[RED, GREEN], [GREEN, BLUE], [BLUE, RED], [YELLOW, PURPLE], [CYAN, PINK], [GREEN, PURPLE]][rng.integers(0, 6)]
-            radialGradient(colors = colors, duration = 3*duration)
+            backwards = rng.choice([True, False])
+            if rng.choice([True, False]):
+                colors.reverse()
+            speed = rng.integers(250, 350)
+            gradient(colors = colors, variant = 4)
+            tree.cycle(variant = 4, backwards = backwards, speed = speed, duration = 3*duration)
         # pizza
         elif effect == 26:
             pizza()
@@ -223,11 +238,11 @@ def show(setEffect = None, duration = 30, QUICK = False):
             variant = rng.integers(0, 3)
             if variant < 2:
                 color = [CYAN, BLUE][variant]
-                speed = 0.15 + 0.4*rng.random()
-                wind = -0.3 + 0.6*rng.random()
+                speed = rng.uniform(3, 9)
+                wind = rng.uniform(-6, 6)
             elif variant == 2: # Like the matrix
                 color = GREEN
-                speed = 0.15
+                speed = 3
                 wind = 0
             dropCount = 8 + rng.integers(0, 6)
             rain(color = color, speed = speed, wind = wind, dropCount = dropCount, duration = 3*duration)
@@ -239,7 +254,7 @@ def show(setEffect = None, duration = 30, QUICK = False):
             clock(duration = duration)
         # rain (accumulating snow variant)
         elif effect == 30:
-            rain(color = WHITE, dropCount = 11, accumulationSpeed = 0.0025, wind = 0, speed = 0.1, duration = 3*duration)
+            rain(color = WHITE, dropCount = 11, accumulationSpeed = 0.03, wind = 0, speed = 2, duration = 2*duration)
         # fade
         elif effect == 32:
             colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
@@ -250,16 +265,13 @@ def show(setEffect = None, duration = 30, QUICK = False):
         # blink
         elif effect == 33:
             colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
-            groups = rng.integers(5, 15)
+            groupCount = rng.integers(5, 15)
             p = 0.5 + 0.35 * rng.random()
-            slowness = 0.3 + rng.random()
-            blink(colors = colors, groups = groups, slowness = slowness, p = p, duration = duration)
+            delay = 0.3 + rng.random()
+            blink(colors = colors, groupCount = groupCount, delay = delay, p = p, duration = duration)
 
 # Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
-def unmappedShow(setEffect = None, duration = 90, QUICK = False):
-    if QUICK:
-        quickShow()
-        return
+def unmappedShow(setEffect = None, duration = 90):
     oldEffect = 0
     effect = 0
     cycles = 1
@@ -273,8 +285,9 @@ def unmappedShow(setEffect = None, duration = 90, QUICK = False):
             randomFill(cycles = cycles)
         # sequence
         elif effect == 2:
-            speed = rng.integers(1, 4)
-            sequence(cycles = cycles, speed = speed)
+            colors = rng.choice([WHITE, PURPLE, COLORS, TRADITIONALCOLORS, TREECOLORS])
+            speed = rng.integers(50, 150)
+            randomFill(SEQUENCE = True, colors = colors, speed = speed, cycles = 2*cycles)
         # twinkle
         elif effect == 3:
             if rng.random() < 0.5:
@@ -286,8 +299,8 @@ def unmappedShow(setEffect = None, duration = 90, QUICK = False):
         # wander
         elif effect == 4:
             colors = [None, COLORS, TREECOLORS, TRADITIONALCOLORS, TRADITIONALCOLORS][rng.integers(0, 5)]
-            slowness = 10 + rng.integers(0, 16)
-            wander(colors = colors, slowness = slowness, duration = 3*duration)
+            wanderTime = .5 + rng.uniform(0, 1.5)
+            wander(colors = colors, wanderTime = wanderTime, duration = 3*duration)
         # setAll
         elif effect == 5:
             setAll()
@@ -319,10 +332,10 @@ def unmappedShow(setEffect = None, duration = 90, QUICK = False):
         # blink
         elif effect == 8:
             colors = [TRADITIONALCOLORS, COLORS, TREECOLORS, None, COLORS[rng.integers(len(COLORS))]][rng.integers(5)]
-            groups = rng.integers(5, 15)
+            groupCount = rng.integers(5, 15)
             p = 0.5 + 0.35 * rng.random()
-            slowness = 0.3 + rng.random()
-            blink(colors = colors, groups = groups, slowness = slowness, p = p, duration = duration)
+            delay = 0.3 + rng.random()
+            blink(colors = colors, groupCount = groupCount, delay = delay, p = p, duration = duration)
 
 
 if __name__ == "__main__":

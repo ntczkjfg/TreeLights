@@ -6,22 +6,46 @@ import numpy as np
 from time import sleep, time
 from os import listdir
 
+# Builds a Color selector function, something lots of effects use
+def ColorBuilder(colors = COLORS):
+    if colors is None: # No color provided, return random colors
+        Color = lambda: rng.integers(0, 256, 3)
+    else:
+        colors = np.array(colors) # Make numpy array
+        if colors.ndim == 1: # It's just one color
+            Color = lambda: colors
+        else: # It's an array of colors
+            Color = lambda: rng.choice(colors)
+    return Color
+
 def contrast(color1, color2):
     if np.array_equal(color1, BLACK) or np.array_equal(color2, BLACK):
         if not np.array_equal(color1, color2):
             return True
         return False
     # Normalizing the colors to roughly equal brightness (Since brightness differences don't show up well in the tree)
-    c1brightness = color1[0] + color1[1] + color1[2]
-    c2brightness = color2[0] + color2[1] + color2[2]
-    color1 = np.array(color1)
-    color2 = np.array(color2)
+    c1brightness = np.sum(color1)
+    c2brightness = np.sum(color2)
+    color1 = np.array(color1, dtype=np.float64)
+    color2 = np.array(color2, dtype=np.float64)
     color1 = 100 * color1 / c1brightness
     color2 = 100 * color2 / c2brightness
-    hueDifference = abs(color1[0] - color2[0]) + abs(color1[1] - color2[1]) + abs(color1[2] - color2[2])
+    hueDifference = np.sum(np.abs(color1-color2))#abs(color1[0] - color2[0]) + abs(color1[1] - color2[1]) + abs(color1[2] - color2[2])
     # 40 determined manually as good compromise
     # Not perfect but keeps most good combos while removing the worst of the worst
     return hueDifference >= 40
+
+def contrastColor(oldColor, Color):
+    newColor = Color()
+    while not contrast(oldColor, newColor): newColor = Color()
+    return newColor
+    for _ in range(5):
+        if not contrast(oldColor, newColor):
+            newColor = Color()
+            continue
+        return newColor
+    print("Couldn't find a contrasting color")
+    return newColor
 
 # Runs about 30 fps
 def runFromCSV(name, m = None):

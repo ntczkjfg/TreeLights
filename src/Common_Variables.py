@@ -30,10 +30,11 @@ def newTree(coordinates = None, sameCoords = False):
         return
     with open(PATH + "coordinates.list", "wb") as f:
         pickle.dump(coordinates, f)
+        print(f"Saved coordinates coordinates.list")
     tree = Tree(coordinates)
     with open(PATH + treeFileName, "wb") as f:
         pickle.dump(tree, f)
-    tree.finishNeighbors()
+        print(f"Saved tree {treeFileName}")
 
 # Makes fake coordinates and builds a tree from them
 # Useful for testing before coordinates have been generated
@@ -52,18 +53,21 @@ def rebuildTree(save = True):
     if save:
         with open(PATH + treeFileName, "wb") as f:
             pickle.dump(tree, f)
-    tree.finishNeighbors()
+            print(f"Saved tree {treeFileName}")
 
 # Loads pickled tree - significantly faster than building from scratch
 def savedTree(treeFileName):
     global tree
     with open(PATH + treeFileName, "rb") as f:
         tree = pickle.load(f)
-    tree.finishNeighbors()
-
+from time import time
+startTime = time()
 if __name__ != "__main__":
     if platform.system() == "Windows":
         savedTree(treeFileName)
         plt.show(block = False)
     elif platform.system() == "Linux":
-        savedTree(treeFileName)
+        rebuildTree(save = False)
+        #savedTree(treeFileName)
+finishTime = round(time() - startTime, 2)
+print(f"Took {finishTime} seconds")
