@@ -7,6 +7,7 @@ if platform.system() == "Windows":
 elif platform.system() == "Linux":
     import board
     import neopixel
+    from new_neopixel_write import neopixel_write
 else:
     print("Unknown operating system.", platform.system())
 
@@ -19,7 +20,6 @@ class Tree(neopixel.NeoPixel):
     def __init__(self, coordinates):
         super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = "RGB")
         self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
-        self._post_brightness_buffer = None
         self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
         self.coordinates = []
@@ -72,14 +72,16 @@ class Tree(neopixel.NeoPixel):
         maxZ = self[self.sortedZ[-8]].z
         m = -maxR / maxZ
         b = maxR
-        surface = self.r > (m*self.z + b - 0.05)
+        self.s = self.r > (m*self.z + b - 0.05)
+        coords_squared = np.sum(self.coordinates[:,:3]**2, axis = 1, keepdims = True)
+        dists = np.sqrt(coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avgDist
         for i in range(self.n):
-            dists = np.sqrt((self[i].x - self.x)**2 + (self[i].y - self.y)**2 + (self[i].z - self.z)**2)
-            neighbors = list(set(np.where(dists < avgDist)[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
+            neighbors = list(set(np.where(dists[i])[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
             self[i].neighbors = neighbors
-            if surface[i]:
-                self.pixels[i].surface = True
-        self.s = surface
+        # neopixel_write is optimized from adafruit neopixel library, but new function may be hardware-specific
+        # returns True if initialization succeeds, False otherwise
+        # Falls back to hardware-agnostic version if it fails
+        self.NEW_NEOPIXEL_WRITE = neopixel_write(self.pin, self._buffer)
     
     def cycle(self, index = None, variant = 0, backwards = False, speed = 400, duration = 99999):
         startTime = time()
@@ -109,33 +111,34 @@ class Tree(neopixel.NeoPixel):
     
     def fade(self, halflife = 0.25, dt = .05):
         f = 0.5**(dt/halflife)
-        self._brightness_buffer = np.multiply(self._pre_brightness_buffer, f).astype(np.uint8)
+        self._buffer = np.multiply(self._pre_brightness_buffer, f).astype(np.uint8)
     
     def fill(self, color):
-        self._brightness_buffer = np.tile(color, self.n).astype(np.uint8)
+        self._buffer = np.tile(color, self.n).astype(np.uint8)
     
     def clear(self, UPDATE = True, FLAGSONLY = False):
         self.flags = np.full(self.n, None, dtype=object)
         if not FLAGSONLY:
-            self._brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
+            self._buffer = np.zeros(self._bytes, dtype=np.uint8)
         if UPDATE and not FLAGSONLY: self.show()
     
     @property
-    def _brightness_buffer(self):
-        if self._post_brightness_buffer is not None:
-            return self._post_brightness_buffer
-        return self._pre_brightness_buffer
+    def _buffer(self):
+        return (self._pre_brightness_buffer*self._brightness).astype(np.uint8)
     
-    @_brightness_buffer.setter
-    def _brightness_buffer(self, buffer):
+    @_buffer.setter
+    def _buffer(self, buffer):
         if len(buffer) != self._bytes:
             raise ValueError
         self._pre_brightness_buffer = np.array(buffer, dtype=np.uint8)
-        if self._post_brightness_buffer is not None:
-            self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
     
-    def show(self, record = False, maxFrames = 1000000):
-        self._transmit(bytearray(self._brightness_buffer.tobytes()))
+    def show(self, record = False, maxFrames = 100000):
+        if self.NEW_NEOPIXEL_WRITE:
+            neopixel_write(self.pin, self._buffer)
+        else:
+            self._transmit(bytearray(self._buffer.tobytes()))
+        # neopixel_write is optimized for my tree (increases fps by about 50%), but may be hardware-specific
+        # If initilization fails this falls back to self._transmit which should work for any supported hardware
         self.frames += 1
         if record and self.frame < maxFrames:
             name = "forMatt"
@@ -153,18 +156,15 @@ class Tree(neopixel.NeoPixel):
             print(self.frame, "frames in", time() - self.startTime, "seconds.")
         data = str(self.frame) + ","
         for i in range(self.n):
-            data += str(self._brightness_buffer[3*i]) + "," # R
-            data += str(self._brightness_buffer[3*i+1]) + "," # G
-            data += str(self._brightness_buffer[3*i+2]) + "," # B
+            data += str(self._buffer[3*i]) + "," # R
+            data += str(self._buffer[3*i+1]) + "," # G
+            data += str(self._buffer[3*i+2]) + "," # B
         with open(PATH + name + ".csv", "a") as f:
             f.write(data[:-1] + "\n") # Remove last comma, add linefeed
         self.frame += 1
     
     def __repr__(self):
         return str(self.pixels)
-    
-    def __str__(self):
-        return "Tree object with " + str(self.n) + " LEDs."
     
     def __getitem__(self, key):
         return self.pixels[key]
@@ -175,13 +175,11 @@ class Tree(neopixel.NeoPixel):
         if index >= self.n or index < 0:
             raise IndexError
         self._pre_brightness_buffer[3*index:3*index+3] = color
-        if self._post_brightness_buffer is not None:
-            self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
     
-    def setAll(self, buffer):
+    def setColors(self, buffer):
         if len(buffer) != self._bytes:
             raise ValueError
-        self._brightness_buffer = np.array(buffer, dtype=np.uint8)
+        self._buffer = np.array(buffer, dtype=np.uint8)
     
     @neopixel.NeoPixel.brightness.setter
     def brightness(self, value: float):
@@ -190,11 +188,6 @@ class Tree(neopixel.NeoPixel):
         if -0.001 < change < 0.001:
             return
         self._brightness = value
-        if self._brightness >= 0.999:
-            self._post_brightness_buffer = None
-            self.show()
-            return
-        self._post_brightness_buffer = np.multiply(self._pre_brightness_buffer, self._brightness).astype(np.uint8)
         self.show()
 
 class Pixel():
@@ -215,7 +208,6 @@ class Pixel():
             if self.x < 0: self.a += np.pi # Angles between -π/2 and 3π/2
         self.a = self.a % (2*np.pi) # Angles between 0 and 2π
         self.r = (self.x**2 + self.y**2)**0.5
-        self.surface = False
         self.neighbors = []
     
     @property
@@ -232,6 +224,8 @@ class Pixel():
     def y(self): return self.coordinate[1]
     @property
     def z(self): return self.coordinate[2]
+    @property
+    def surface(self): return self.tree.s[self.i]
     
     def setColor(self, color):
         self.tree[self.i] = color

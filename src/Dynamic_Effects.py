@@ -113,46 +113,49 @@ def blink(colors = TRADITIONALCOLORS, groupCount = 7, p = 0.7, delay = 1, durati
 # A bouncing rainbow ball that changes size and wobbles
 def bouncingRainbowBall(duration = np.inf):
     startTime = time()
+    lastTime = startTime
     radius = .7
-    dR = 0.01
-    minR = 0.4
+    dR = 0.15
+    minR = 0.5
     maxR = .75
     zAngle = 0
-    dZ = 0.03
+    dZ = 0.45
     maxZ = PI/3
     angle = 0
-    dA = 0.1
-    colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK]
+    dA = 1.5
+    colors = np.array([RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK])
     height = radius
-    acceleration = -0.01
-    initialV = 0.21
+    acceleration = -2.5
+    initialV = 3.15
     dH = initialV
-    while time() - startTime < duration:
+    while (t := time()) - startTime < duration:
+        dt = t - lastTime
+        lastTime = t
         points = transform(tree.coordinates[:,0:3], z = -height, yr = -zAngle, zr = -angle)
-        for i in range(len(points)):
-            if points[i][0]**2 + points[i][1]**2 + points[i][2]**2 <= radius**2:
-                tree[i].setColor(colors[int(4 * points[i][2] / radius + 4)])
-        radius += dR
+        ball = np.where(points[:,0]**2 + points[:,1]**2 + points[:,2]**2 <= radius**2)[0]
+        indices = (4*points[:,2] / radius + 4).astype(np.uint8)[ball]
+        ballColors = colors[indices]
+        for i, j in enumerate(ball):
+            tree[j].setColor(ballColors[i])
+        radius += dR*dt
         if radius >= maxR:
             dR = -abs(dR)
-            radius += dR
+            radius = maxR
         if radius <= minR:
             dR = abs(dR)
-            radius += dR
-        zAngle += dZ
+            radius = minR
+        zAngle += dZ*dt
         if zAngle > maxZ:
             dZ = -abs(dZ)
-            zAngle += dZ
+            zAngle = maxZ
         if zAngle < -maxZ:
             dZ  = abs(dZ)
-            zAngle += 2*dZ
-        angle += dA
-        if angle > TAU:
-            angle = angle - TAU
-        dH += acceleration
-        height += dH
+            zAngle = -maxZ
+        angle = (angle + dA*dt) % TAU
+        dH += acceleration*dt
+        height += dH*dt
         if height - radius < 0:
-            height -= dH
+            height = radius
             dH = initialV
         tree.show()
         tree.clear(UPDATE = False)
@@ -225,8 +228,8 @@ def clock(duration = np.inf):
         newColors[hourHand] = BLUE
         newColors[frame] = WHITE
         newColors[middle] = RED
-        different = newColors != oldColors
-        for i in np.where(different)[0]:
+        different = np.where(newColors != oldColors)[0]
+        for i in different:
             tree[i].setColor(newColors[i])
         oldColors = newColors
         tree.show()
@@ -341,7 +344,7 @@ def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, 
         f = max(0, min(1, midline + amplitude * np.sin(speed * time())))
         if f <= 0.003:
             pre_fade_buffer = np.concatenate([Color() for _ in range(tree.n)])
-        tree.setAll(pre_fade_buffer*f)
+        tree.setColors(pre_fade_buffer*f)
         tree.show()
 
 # Randomly restores lights to full brightness while constantly fading
@@ -378,7 +381,7 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
         lastTime = time()
         h -= fallSpeed * dt
         indices = (len(colors)*((fuzzedZ - h) % height)/height).astype(np.int32)
-        tree.setAll(colors[indices].flatten())
+        tree.setColors(colors[indices].flatten())
         tree.show()
 
 # Meant to imitate a fire
@@ -388,7 +391,6 @@ def fire(duration = np.inf):
     one = np.array([75, 55, 0])
     two = np.array([75, 10, 0])
     twoone = two - one
-    tree.clear(FLAGSONLY = True)
     tree.flags = np.full(tree.n, 0, dtype=object)
     def flagNeighbors(flame):
         for neighbor in flame.neighbors:
@@ -400,7 +402,7 @@ def fire(duration = np.inf):
     while time() - startTime < duration:
         dt = time() - lastTime
         lastTime = time()
-        tree.fade(halflife = 0.17, dt = dt)
+        tree.fade(halflife = 0.05, dt = dt)
         if rng.random() < 2:
             flames = rng.choice(tree.pixels, 20)
             for i, flame in enumerate(flames):
@@ -855,7 +857,7 @@ def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, 
         f[activeLights] = (1 + intensity * (1 - np.abs(2*tree.flags[activeLights]/length - 1)))
         f = np.column_stack((f, f, f)).flatten()
         new_buffer = buffer * f
-        tree.setAll(new_buffer)
+        tree.setColors(new_buffer)
         tree.show()
 
 # Has all LEDs let their color wander around at random
@@ -887,7 +889,7 @@ def wander(colors = COLORS, wanderTime = 1, variance = None, duration = np.inf):
             lengths[expiredLights] = [rng.uniform(wanderTime - variance, wanderTime + variance) for _ in range(expiredLen)]
         f = np.array([elapsedTimes / lengths])
         color_buffer = oldColors + f.T * (newColors - oldColors)
-        tree.setAll(color_buffer.flatten())
+        tree.setColors(color_buffer.flatten())
         tree.show()
 
 # Draws spirals and winds them up
@@ -928,6 +930,9 @@ def zSpiral(twists = 8, speed = TAU, backwards = True, duration = np.inf, cycles
     aMin = np.min(angles)
     aMax = np.max(angles)
     aRange = aMax - aMin
+    # Color is intentionally basd on angle around spiral instead of radius, even though
+    # the two are very similar and radius is way easier to calculate
+    # This is because it creates a nice shimmer effect when run through the radial cycle after
     Color = lambda a: [255 * max(min( 3*abs(a/aRange - 0.5) - 0.5, 1), 0),
                        255 * max(min(-3*abs(a/aRange - 1/3) + 1.0, 1), 0),
                        255 * max(min(-3*abs(a/aRange - 2/3) + 1.0, 1), 0)]

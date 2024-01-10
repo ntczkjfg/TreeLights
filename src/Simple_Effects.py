@@ -87,7 +87,7 @@ def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, RED], variant =
 def pizza():
     # Pepperonis are randomly generated, and rejected if poorly positioned
     # Try to make this many - usually only accept 4-7 total
-    pepperoniCount = 200
+    pepperoniCount = 100
     pepperoniRadius = .35
     crustHeight = 0.7
     cheeseColor = [255, 140, 0]

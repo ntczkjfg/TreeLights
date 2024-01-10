@@ -1,4 +1,4 @@
-from Common_Variables import rng, tree, PI, TAU, newTree
+from Common_Variables import rng, tree, PI, TAU, saveCoords, buildTree
 from Colors import *
 from Simple_Effects import *
 from Helper_Functions import *
@@ -82,6 +82,7 @@ def lightSlice(n, dim, width = 0.015):
 
 # Used to adjust a specific coordinate for a specific light
 def adjustLight(n, dim):
+    global tree
     dims = ["x", "y", "z"]
     if dim not in dims:
         print("""Must specify "x", "y", or "z" dimension""")
@@ -109,19 +110,27 @@ def adjustLight(n, dim):
     coordinates = []
     for pixel in tree:
         coordinates.append(pixel.coordinate)
-    newTree(coordinates)
+    saveCoords(coordinates)
+    tree = buildTree()
 
+# Help determine the maximum theoretical framerate of the tree under various circumstances
 def maxFramerate(duration = 10, variant = 0):
     startTime = time()
+    tree.frames = 0
     while time() - startTime < duration:
-        colors = rng.integers(0, 256, 2400)
-        colors2 = colors.reshape(800, 3)
-        if variant:
-            tree.setAll(colors)
-        else:
+        if variant == 0: # tree.setColors
+            colors = rng.integers(0, 256, 2400)
+            tree.setColors(colors)
+        elif variant == 1: # pixel.setColor
+            colors = rng.integers(0, 256, 2400)
+            colors = colors.reshape(800, 3)
             for i, pixel in enumerate(tree):
-                pixel.setColor(colors2[i])
+                pixel.setColor(colors[i])
+        elif variant == 2: # No color changing
+            pass
         tree.show()
+    duration = time() - startTime
+    print(f"maxFramerate: {tree.frames} frames in {round(duration, 2)} seconds for {round(tree.frames/duration, 2)} fps")
 
 # Divide the tree into halves to detect (and fix) misplaced lights
 def planeTest(sections = 20, variant = "y", startAt = 1):
@@ -141,12 +150,13 @@ def planeTest(sections = 20, variant = "y", startAt = 1):
         x = input("Enter to continue, anything else to flash binary and fix")
         if x == "":
             continue
-        binary(SLEEP = 0.2)
+        binary(SLEEP = 0.25)
         x = input()
         x = int(x, 2)
         adjustLight(x, variant)
         planeTest(sections, variant, startAt = boundary)
         return
+    tree.clear()
 
 # Turns on lights one-by-one in the sorted directions
 def sortedTest(colors = None, speed = 1, variant = "z"):
