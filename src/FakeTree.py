@@ -2,6 +2,13 @@ import pickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import os
+from Common_Variables import dummyCoordinates
+
+current_directory = os.getcwd()
+parent_directory = os.path.dirname(current_directory)
+trees_directory = os.path.join(parent_directory, "Trees")
+coordinates_file = os.path.join(trees_directory, "coordinates.list")
 plt.rcParams['toolbar'] = 'None'
 
 # via https://stackoverflow.com/questions/45729092/make-interactive-matplotlib-window-not-pop-to-front-on-each-update-windows-7
@@ -19,11 +26,13 @@ def mypause(interval):
 
 D18 = 0
 class FakeTree:
-    def __init__(self, pin, LED_COUNT, auto_write = False):
+    def __init__(self, pin, n, auto_write = False, pixel_order = "RGB"):
         # Load point coordinates from file
-        with open(r"C:\Users\User\My Stuff\GitHub\TreeLights\Trees\coordinates.list", "rb") as f:
-            self.coords = np.array(pickle.load(f))
-        
+        try:
+            with open(coordinates_file, "rb") as f:
+                self.coords = np.array(pickle.load(f))
+        except FileNotFoundError:
+            self.coords = dummyCoordinates(n)
         # Create figure
         width = 6
         height = width#np.max(self.coords[:, 2])/2 * width
@@ -82,14 +91,19 @@ class FakeTree:
         # Show the plot - need `block=False` to not lock the thread
         plt.show(block=False)
     
+    
     # Update the display with any changes to the point colors
-    def show(self):
+    def neopixel_write(self, pin, buffer):
+        if self.setup == False:
+            self.setup = True
+            return True
+        self.colors = buffer.reshape(-1, 3).tolist()
         if (self.ax.azim, self.ax.elev, self.ax.dist) != self.cam:
             self.cam = (self.ax.azim, self.ax.elev, self.ax.dist)
             self.update_point_sizes()
         self.scatter.set_facecolors(self.colors)
         plt.draw()
-        mypause(0.001)
+        mypause(0.03)
     
     # Change a color without updating it on the display
     def update_colors(self, colors):

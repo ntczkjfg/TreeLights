@@ -356,8 +356,11 @@ def fadeRestore(colors = TRADITIONALCOLORS, p = 0.95, halflife = 0.3, duration =
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
+        # p is probability of each light restoring per second
+        # exp adjusts this to work with dt seconds
+        exp = (1-p)**dt
         tree.fade(halflife = halflife, dt = dt)
-        renew = np.where(rng.random(tree.n) < p)[0]
+        renew = np.where(rng.random(tree.n) >= exp)[0]
         for i in renew:
             tree[i].setColor(color_buffer[i])
         tree.show()
@@ -668,8 +671,7 @@ def spirals(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     m1 = sectionH / TAU
     m2 = -TAU / sectionH
     m2sp1 = m2**2 + 1
-    for pixel in tree:
-        pixel.flag = [None, sectionH*(pixel.z // sectionH)]
+    tree.flags = np.array([None, sectionH*(tree.z // sectionH)], dtype=object)
     npA = np.array([pixel.a for pixel in tree])
     npZ = np.array([pixel.z for pixel in tree])
     npSpirals = np.array([[i] for i in range(spiralCount)])
@@ -800,7 +802,7 @@ def sweep(colors = COLORS, speed = 5, CLOCKWISE = False, ALTERNATE = True, durat
         tree.show()
 
 # Sweeps around the tree continuously and smoothly changing colors
-def sweeper(colors = COLORS[1:], speed = 5, sequence = True, duration = np.inf):
+def sweeper(colors = COLORS[1:], speed = 5, SEQUENCE = True, duration = np.inf):
     startTime = time()
     lastTime = startTime
     if SEQUENCE:
@@ -814,20 +816,24 @@ def sweeper(colors = COLORS[1:], speed = 5, sequence = True, duration = np.inf):
         oldColor = Color()
         nextColor = Color()
         while not contrast(nextColor, oldColor): nextColor = Color()
+    angles = tree.a
+    if speed < 0:
+        speed = abs(speed)
+        angles = TAU - angles
     angle = 0
     while (t := time()) - startTime < duration:
         dt = t - lastTime
         lastTime = t
         angle += speed * dt
-        if abs(angle) > TAU:
+        if angle > TAU:
             angle = 0
             oldColor = nextColor
             if SEQUENCE:
                 nextColor = Color(oldColor)
             else:
                 while not contrast(nextColor, oldColor): nextColor = Color()
-        color = oldColor + abs(angle/TAU)*(nextColor - oldColor)
-        front = np.where(np.abs(tree.a - angle) <= speed*dt)[0]
+        color = oldColor + (angle/TAU)*(nextColor - oldColor)
+        front = np.where(np.abs(angles - angle) <= speed*dt)[0]
         for i in front:
             tree[i].setColor(color)
         tree.show()

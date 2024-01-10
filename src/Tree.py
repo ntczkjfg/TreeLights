@@ -4,6 +4,7 @@ import platform
 if platform.system() == "Windows":
     from FakeTree import FakeTree as neopixel
     import FakeTree as board
+    from FakeTree import neopixel_write
 elif platform.system() == "Linux":
     import board
     import neopixel

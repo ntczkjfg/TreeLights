@@ -1,15 +1,12 @@
 from Tree import Tree
 import numpy as np
 import pickle
-import platform
 from time import time
-if platform.system() == "Windows":
-    PATH = "C:/Users/User/My Stuff/GitHub/TreeLights/Trees/"
-elif platform.system() == "Linux":
-    PATH = "/home/pi/Desktop/TreeLights/Trees/"
-else:
-    print("Unknown operating system.", platform.system())
+import os
 
+current_directory = os.getcwd()
+parent_directory = os.path.dirname(current_directory)
+PATH = os.path.join(parent_directory, "Trees")
 rng = np.random.default_rng()
 PI = float(np.pi)
 TAU = 2*PI
@@ -21,27 +18,33 @@ def saveCoords(coordinates = None):
         print("Must supply coordinates to save")
         return
     coordinates = list(coordinates)
-    with open(PATH + "coordinates.list", "wb") as f:
+    with open(os.path.join(PATH, "coordinates.list"), "wb") as f:
         pickle.dump(coordinates, f)
     print("Saved coordinates")
 
 # Makes fake coordinates and builds a tree from them
 # Useful for testing before coordinates have been generated
-def dummyTree(LEDCount = 800):
-    global tree
-    coordinates = [[rng.random(), rng.random(), rng.random()] for i in range(LEDCount)]
-    newTree(coordinates)
+def dummyCoordinates(n = 800):
+    coordinates = []
+    while len(coordinates) < n:
+        point = [rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(0, 4)]
+        if point[0]**2 + point[1]**2 <= (1 - point[2]/4)**2:
+            coordinates.append(point)
+    return coordinates
 
 # Builds the tree from scratch, using existing coordinates
 # This needs to be done if the Tree class is modified
 def buildTree():
     startTime = time()
-    global tree
-    with open(PATH + "coordinates.list", "rb") as f:
-        coordinates = pickle.load(f)
+    try:
+        with open(os.path.join(PATH, "coordinates.list"), "rb") as f:
+            coordinates = pickle.load(f)
+    except FileNotFoundError:
+        print("Coordinates not found - making dummy coordinates")
+        coordinates = dummyCoordinates()
     tree = Tree(coordinates)
     print(f"Built the tree in {round(time() - startTime, 2)} seconds")
     return tree
 
 if __name__ != "__main__":
-    buildTree()
+    tree = buildTree()
