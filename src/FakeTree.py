@@ -31,16 +31,6 @@ def neopixel_write(pin, buffer):
 class NeoPixel:
     def __init__(self, pin, n, auto_write = False, pixel_order = "RGB"):
         # Load point coordinates from file
-        try:
-            with open(coordinates_file, "rb") as f:
-                self.coordinates = np.array(pickle.load(f))
-        except FileNotFoundError:
-            rng = np.random.default_rng()
-            self.coordinates = []
-            while len(self.coordinates) < n:
-                point = [rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(0, 4)]
-                if point[0]**2 + point[1]**2 <= (1 - point[2]/4)**2:
-                    self.coordinates.append(point)
         self.coordinates = np.array(self.coordinates)
         self.n = n
         self._bytes = 3*self.n
@@ -118,13 +108,20 @@ class NeoPixel:
         if self.setup == False:
             self.setup = True
             return True
-        self.colors = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 3)/255
+        gamma = 1 / 2.2
+        self.colors = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 3)
+        self.colors = (self.colors / 255)**gamma
         if (self.ax.azim, self.ax.elev, self.ax.dist) != self.cam:
             self.cam = (self.ax.azim, self.ax.elev, self.ax.dist)
             self.update_point_sizes()
         self.scatter.set_facecolors(self.colors)
         plt.draw()
-        mypause(0.00001)
+        # I forget what the below code does but it doesn't work without it
+        backend = plt.rcParams['backend']
+        if backend in matplotlib.rcsetup.interactive_bk:
+            figManager = matplotlib._pylab_helpers.Gcf.get_active()
+            if figManager is not None:
+                figManager.canvas.start_event_loop(.00001)
     
     # Change a color without updating it on the display
     def update_colors(self, colors):
@@ -183,6 +180,8 @@ class NeoPixel:
             branches.append([[0, branch_points[i][0]]
                              , [0, branch_points[i][1]]
                              , [branch_points[i][2], branch_points[i][2]-.1]])
+        # Big red line at the positive x-axis, for orienting
+        self.ax.plot([0, 2], [0, 0], [0, 0], linewidth=5, color='red')
         # Plot the branches as green lines
         for branch in branches:
             self.ax.plot(branch[0], branch[1], branch[2]
@@ -197,21 +196,5 @@ class NeoPixel:
         self.update_point_sizes()
         self.fig.canvas.draw_idle()
     
-    # Class is iterable, iterates among the colors of the LEDs in order
-    def __iter__(self):
-        self.iter = 0
-        return self
-    def __next__(self):
-        if self.iter < len(self.colors):
-            result = np.round(255*self.colors[self.iter][:3])
-            result = [int(result[1]), int(result[0]), int(result[2])]
-            self.iter += 1
-            return result
-        else:
-            raise StopIteration
-    def __getitem__(self, key):
-        result = np.round(255*self.colors[key][:3])
-        result = [int(result[1]), int(result[0]), int(result[2])]
-        return result
-    def __setitem__(self, key, color):
-        self.colors[key] = [color[1]/255, color[0]/255, color[2]/255]
+    def __len__(self):
+        return self.n

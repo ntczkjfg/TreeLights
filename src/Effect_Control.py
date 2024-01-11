@@ -229,7 +229,7 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             fps(func, "cycle")
         # gradient
         elif effect == 20:
-            colors = [None, COLORS][rng.integers(0, 2)]
+            colors = [None, COLORS[1:]][rng.integers(0, 2)]
             variant = rng.choice([1, 2, 3, 3, 4, 4, 5, 5])
             backwards = rng.choice([True, False])
             func = lambda: gradient(colors = colors, variant = variant)

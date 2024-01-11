@@ -19,18 +19,18 @@ class Tree(neopixel.NeoPixel):
         self.[i] returns the color of the i-th LED and can also be used to set said color."""
     
     def __init__(self, coordinates):
-        self.coordinates = None
+        # Set this now so super class has access to it
+        # Relevant if running on Windows, using FakeTree class
+        self.coordinates = coordinates
         super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = "RGB")
         self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
         self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
-        if self.coordinates is not None:
-            coordinates = self.coordinates.tolist()
-        self.coordinates = []
+        polarCoordinates = []
         for i, coordinate in enumerate(coordinates):
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
-            self.coordinates.append([self.pixels[i].r, self.pixels[i].a])
-        self.coordinates = np.column_stack((coordinates, self.coordinates))
+            polarCoordinates.append([self.pixels[i].r, self.pixels[i].a])
+        self.coordinates = np.column_stack((self.coordinates, polarCoordinates))
         totalDist = np.sum(np.sqrt(np.sum((self.coordinates[1:,:3] - self.coordinates[:-1,:3])**2, axis=1)))
         self.x = self.coordinates[:,0]
         self.y = self.coordinates[:,1]
@@ -105,7 +105,7 @@ class Tree(neopixel.NeoPixel):
         while time() - startTime < duration:
             dt = time() - lastTime
             lastTime = time()
-            firstCount = int(speed * dt)
+            firstCount = min(int(speed * dt), self.n)
             first = [self.pixels[index[a*(i+b)]].color for i in range(firstCount)]
             for i in range(self.n - firstCount):
                 self.pixels[index[a*(i+b)]].setColor(self.pixels[index[a*(i + firstCount + b)]].color)
@@ -172,9 +172,6 @@ class Tree(neopixel.NeoPixel):
     
     def __getitem__(self, key):
         return self.pixels[key]
-
-    def __len__(self):
-        return self.n
     
     def __setitem__(self, index, color):
         if index < 0:
