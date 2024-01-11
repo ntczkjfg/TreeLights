@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import os
-from Common_Variables import dummyCoordinates
 
 current_directory = os.getcwd()
 parent_directory = os.path.dirname(current_directory)
@@ -25,17 +24,32 @@ def mypause(interval):
             return
 
 D18 = 0
-class FakeTree:
+
+def neopixel_write(pin, buffer):
+    return False
+
+class NeoPixel:
     def __init__(self, pin, n, auto_write = False, pixel_order = "RGB"):
         # Load point coordinates from file
         try:
             with open(coordinates_file, "rb") as f:
-                self.coords = np.array(pickle.load(f))
+                self.coordinates = np.array(pickle.load(f))
         except FileNotFoundError:
-            self.coords = dummyCoordinates(n)
+            rng = np.random.default_rng()
+            self.coordinates = []
+            while len(self.coordinates) < n:
+                point = [rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(0, 4)]
+                if point[0]**2 + point[1]**2 <= (1 - point[2]/4)**2:
+                    self.coordinates.append(point)
+        self.coordinates = np.array(self.coordinates)
+        self.n = n
+        self._bytes = 3*self.n
+        self.pin = pin
+        self._brightness = 1
+        self.setup = False
         # Create figure
         width = 6
-        height = width#np.max(self.coords[:, 2])/2 * width
+        height = width#np.max(self.coordinates[:, 2])/2 * width
         self.fig = plt.figure(figsize=(width, height), dpi=100)
         # Set title bar
         #self.fig.canvas.set_window_title("TreeLights")
@@ -46,10 +60,10 @@ class FakeTree:
         self.ax = self.fig.add_subplot(111, projection='3d', aspect='auto')
         self.ax.set_facecolor('lightgray')
         # Add the points, which have initial colors of all black
-        self.colors = np.zeros_like(self.coords)
-        self.scatter = self.ax.scatter(self.coords[:,0]
-                                       , self.coords[:,1]
-                                       , self.coords[:,2]
+        self.colors = np.zeros_like(self.coordinates[:,:3])
+        self.scatter = self.ax.scatter(self.coordinates[:,0]
+                                       , self.coordinates[:,1]
+                                       , self.coordinates[:,2]
                                        , c=self.colors)
         
         # Camera is parallel to the xy plane
@@ -62,10 +76,10 @@ class FakeTree:
         # Adjust axis bounds
         self.ax.set_xlim3d(-1, 1)
         self.ax.set_ylim3d(-1, 1)
-        self.ax.set_zlim3d(0, np.max(self.coords[:,2]))
+        self.ax.set_zlim3d(0, np.max(self.coordinates[:,2]))
         
         # Set aspect ratio
-        self.ax.set_box_aspect((1, 1, np.max(self.coords[:,2]/2)))
+        self.ax.set_box_aspect((1, 1, np.max(self.coordinates[:,2]/2)))
         
         # Hide axes and gridlines
         self.ax.set_axis_off()
@@ -90,20 +104,27 @@ class FakeTree:
         
         # Show the plot - need `block=False` to not lock the thread
         plt.show(block=False)
-    
+
+    @property
+    def brightness(self):
+        return self._brightness
+
+    @brightness.setter
+    def brightness(self, value):
+        pass
     
     # Update the display with any changes to the point colors
-    def neopixel_write(self, pin, buffer):
+    def _transmit(self, buffer):
         if self.setup == False:
             self.setup = True
             return True
-        self.colors = buffer.reshape(-1, 3).tolist()
+        self.colors = np.frombuffer(buffer, dtype=np.uint8).reshape(-1, 3)/255
         if (self.ax.azim, self.ax.elev, self.ax.dist) != self.cam:
             self.cam = (self.ax.azim, self.ax.elev, self.ax.dist)
             self.update_point_sizes()
         self.scatter.set_facecolors(self.colors)
         plt.draw()
-        mypause(0.03)
+        mypause(0.00001)
     
     # Change a color without updating it on the display
     def update_colors(self, colors):
@@ -119,7 +140,7 @@ class FakeTree:
         z = self.ax.dist * np.sin(np.radians(self.ax.elev))
         camera_pos = (x, y, z)
         # Calculate distance from camera to each point the pythagorean way
-        dists = np.sqrt(np.sum((self.coords - camera_pos)**2, axis=1))
+        dists = np.sqrt(np.sum((self.coordinates[:,:3] - camera_pos)**2, axis=1))
         # Normalize distances to between -1 (far) and 1 (close)
         max_dist = np.max(dists)
         min_dist = np.min(dists)

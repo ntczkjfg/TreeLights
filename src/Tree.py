@@ -2,7 +2,7 @@ import numpy as np
 from time import sleep, time
 import platform
 if platform.system() == "Windows":
-    from FakeTree import FakeTree as neopixel
+    import FakeTree as neopixel
     import FakeTree as board
     from FakeTree import neopixel_write
 elif platform.system() == "Linux":
@@ -19,10 +19,13 @@ class Tree(neopixel.NeoPixel):
         self.[i] returns the color of the i-th LED and can also be used to set said color."""
     
     def __init__(self, coordinates):
+        self.coordinates = None
         super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = "RGB")
         self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
         self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
+        if self.coordinates is not None:
+            coordinates = self.coordinates.tolist()
         self.coordinates = []
         for i, coordinate in enumerate(coordinates):
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
@@ -75,7 +78,7 @@ class Tree(neopixel.NeoPixel):
         b = maxR
         self.s = self.r > (m*self.z + b - 0.05)
         coords_squared = np.sum(self.coordinates[:,:3]**2, axis = 1, keepdims = True)
-        dists = np.sqrt(coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avgDist
+        dists = (coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avgDist**2
         for i in range(self.n):
             neighbors = list(set(np.where(dists[i])[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
             self[i].neighbors = neighbors
@@ -169,6 +172,9 @@ class Tree(neopixel.NeoPixel):
     
     def __getitem__(self, key):
         return self.pixels[key]
+
+    def __len__(self):
+        return self.n
     
     def __setitem__(self, index, color):
         if index < 0:
@@ -176,6 +182,9 @@ class Tree(neopixel.NeoPixel):
         if index >= self.n or index < 0:
             raise IndexError
         self._pre_brightness_buffer[3*index:3*index+3] = color
+
+    def __iter__(self):
+        return iter(self.pixels)
     
     def setColors(self, buffer):
         if len(buffer) != self._bytes:

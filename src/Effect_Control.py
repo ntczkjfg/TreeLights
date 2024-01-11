@@ -225,7 +225,7 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             backwards2 = rng.choice([True, False])
             func = lambda: zSpiral(speed = speed1, twists = twists, backwards = backwards1, cycles = cycles)
             fps(func, "zSpiral")
-            func = lambda: tree.cycle(variant = 4, speed = speed2, backwards = backwards2, duration = 2*duration - (time() - startTime))
+            func = lambda: tree.cycle(variant = 4, speed = speed2, backwards = backwards2, duration = max(2*duration - (time() - startTime), 0.1))
             fps(func, "cycle")
         # gradient
         elif effect == 20:
