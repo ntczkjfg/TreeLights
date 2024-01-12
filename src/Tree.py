@@ -47,12 +47,16 @@ class Tree(neopixel.NeoPixel):
         self.zMax = np.max(self.z)
         self.rMax = np.max(self.r)
         self.aMax = np.max(self.a)
-        avgDist = totalDist / (self.n - 1)
         self.xRange = self.xMax - self.xMin
         self.yRange = self.yMax - self.yMin
         self.zRange = self.zMax - self.zMin
         self.rRange = self.rMax - self.rMin
         self.aRange = self.aMax - self.aMin
+        self.xMid = self.xMin + 0.5*self.xRange
+        self.yMid = self.yMin + 0.5*self.yRange
+        self.zMid = self.zMin + 0.5*self.zRange
+        self.rMid = self.rMin + 0.5*self.rRange
+        self.aMid = self.aMin + 0.5*self.aRange
         
         # Used when recording effects to CSV
         self.frame = 0
@@ -78,6 +82,7 @@ class Tree(neopixel.NeoPixel):
         b = maxR
         self.s = self.r > (m*self.z + b - 0.05)
         coords_squared = np.sum(self.coordinates[:,:3]**2, axis = 1, keepdims = True)
+        avgDist = totalDist / (self.n - 1)
         dists = (coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avgDist**2
         for i in range(self.n):
             neighbors = list(set(np.where(dists[i])[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
@@ -87,15 +92,15 @@ class Tree(neopixel.NeoPixel):
         # Falls back to hardware-agnostic version if it fails
         self.NEW_NEOPIXEL_WRITE = neopixel_write(self.pin, self._buffer)
     
-    def cycle(self, index = None, variant = 0, backwards = False, speed = 400, duration = 99999):
+    def cycle(self, indices = None, variant = 0, backwards = False, speed = 400, duration = 99999):
         startTime = time()
         lastTime = startTime
         if speed == 0: return
         if speed < 0:
             speed *= -1
             backwards = not backwards
-        if index is None:
-            index = self.indices[variant]
+        if indices is None:
+            indices = self.indices[variant]
         if backwards:
             a = -1
             b = 1
@@ -106,11 +111,11 @@ class Tree(neopixel.NeoPixel):
             dt = time() - lastTime
             lastTime = time()
             firstCount = min(int(speed * dt), self.n)
-            first = [self.pixels[index[a*(i+b)]].color for i in range(firstCount)]
+            first = [self.pixels[indices[a*(i+b)]].color for i in range(firstCount)]
             for i in range(self.n - firstCount):
-                self.pixels[index[a*(i+b)]].setColor(self.pixels[index[a*(i + firstCount + b)]].color)
+                self.pixels[indices[a*(i+b)]].setColor(self.pixels[indices[a*(i + firstCount + b)]].color)
             for i in range(firstCount):
-                self.pixels[index[a*(-(firstCount - i) + b)]].setColor(first[i])
+                self.pixels[indices[a*(-(firstCount - i) + b)]].setColor(first[i])
             self.show()
     
     def fade(self, halflife = 0.25, dt = .05):

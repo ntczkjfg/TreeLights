@@ -10,6 +10,10 @@ from os import listdir
 import datetime
 
 # Vague ideas, not necessarily todo list
+# Upgrade zSpiral to support arbitrary colors like gradient(), plus option to
+# draw spirals instantly - so it can be used to crate any shimmering radial cycle
+# Smarter accumulating snow that doesn't fake it as much:  Picks snow path by working
+# backwards from empty LEDs near tree bottom, filling it and neighbors as it falls
 # Random stripes
 # Expanding shapes from center
 # Expanding / contracting stripes at random angles
@@ -523,6 +527,8 @@ def randomPlanes(colors = COLORS, duration = np.inf):
             newCoords = transform(tree.coordinates[:,0:3], xr = angleX, zr = angleZ)
             minZ = np.min(newCoords[:,2])
             maxZ = np.max(newCoords[:,2])
+            # Take 2.5 seconds per plane
+            # Intentionally go off-tree a bit to give the fade time to fade more
             speed = (maxZ + 1.5 - minZ)/2.5
             z = minZ
             factor = rng.uniform(0, .15) # Randomized fade speed
@@ -592,7 +598,7 @@ def snake(cycles = np.inf, duration = np.inf):
             cycle += 1
 
 # Rotates a plane about some axis
-def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height = tree.zMax / 2
+def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height = tree.zMid
                   , TWOCOLORS = False, BACKGROUND = False, SPINNER = False, duration = np.inf):
     startTime = time()
     lastTime = startTime
