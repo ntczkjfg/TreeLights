@@ -24,6 +24,7 @@ def saveCoords(coordinates = None):
 
 # Makes fake coordinates and builds a tree from them
 # Useful for testing before coordinates have been generated
+# Also useful for testing things on Windows where accurate maps matter much less
 def dummyCoordinates(n = 800):
     coordinates = []
     while len(coordinates) < n:
@@ -32,16 +33,19 @@ def dummyCoordinates(n = 800):
             coordinates.append(point)
     return coordinates
 
-# Builds the tree from scratch, using existing coordinates
-# This needs to be done if the Tree class is modified
+# Builds the tree, using existing coordinates
 def buildTree():
     startTime = time()
     try:
         with open(os.path.join(PATH, "coordinates.list"), "rb") as f:
             coordinates = pickle.load(f)
     except FileNotFoundError:
-        print("Coordinates not found - making dummy coordinates")
-        coordinates = dummyCoordinates()
+        try:
+            with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "rb") as f:
+                coordinates = pickle.load(f)
+        except FileNotFoundError:
+            print("Coordinates not found - making dummy coordinates")
+            coordinates = dummyCoordinates()
     tree = Tree(coordinates)
     print(f"Built the tree in {round(time() - startTime, 2)} seconds")
     return tree
