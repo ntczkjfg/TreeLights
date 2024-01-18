@@ -23,7 +23,44 @@ import datetime
 # Breakout
 # Look like a wizard hat
 # Falling leaves
-# Jack-o-lantern?                
+# Jack-o-lantern?
+
+def softGradient(colors = [RED, BLUE, GREEN], softness = 3, variant = 3):
+    n = len(colors)
+    softness = min(softness, n)
+    period = softness / n
+    p = TAU / period
+    width = period / 2
+    def Color(x):
+        factors = []
+        for i in range(n):
+            if abs(x - i/n) < width:
+                factor = 0.5*np.cos(p*(x - i/n)) + 0.5
+            elif (i/n > x) and (i/n + width > 1) and (((i/n + width) % 1) > x):
+                factor = 0.5*np.cos(p*(x + 1 - i/n)) + 0.5
+            elif (i/n < x) and (i/n - width < 0) and (((i/n - width) % 1) < x):
+                factor = 0.5*np.cos(p*(x - 1 - i/n)) + 0.5
+            else:
+                factor = 0
+            factors.append(factor)
+        factors = np.array(factors)
+        factorSum = max(1, np.sum(factors))
+        #factors = factors / factorSum
+        color = colors * np.array(factors).reshape(n, -1)
+        color = np.sum(color, axis = 0)
+        if x <= .03 or x >= 0.97:
+            print(f"x: {x}")
+            print(f"width: {width}")
+            print(f"factors: {factors}")
+            print(f"color: {color}")
+            print(f"bools: {abs(x - 2/n) < width}, {(1/n > x) and (1/n + width > 1) and (((1/n + width) % 1) > x)}, {(1/n < x) and (1/n - width < 0) and (((1/n - width) % 1) < x)}")
+            print(" ")
+        if (maxC := np.max(color)) > 255:
+            color = color / (maxC/255)
+        return color
+    for i, j in enumerate(tree.indices[variant]):
+        tree[j].setColor(Color(tree[j].z/tree.zRange))
+    tree.show()
 
 def rainbow_effect(duration=np.inf):
     startTime = time()
@@ -55,6 +92,7 @@ def rainbow_effect(duration=np.inf):
 
         # Update and show the tree
         tree.show()
+        return
 
 def fire2(duration = np.inf):
     startTime = time()
