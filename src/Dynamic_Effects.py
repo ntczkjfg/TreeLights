@@ -29,8 +29,8 @@ def rainbow_effect(duration=np.inf):
     startTime = time()
     lastTime = startTime
     rainbow_position = 0  # Initialize rainbow position
-    rainbow_speed = 0.05  # Adjust the speed of the downward movement
-    color_tightness = 0.1  # Adjust the tightness of color changes
+    rainbow_speed = 0.2  # Adjust the speed of the downward movement
+    color_tightness = 2  # Adjust the tightness of color changes
 
     while (t := time()) - startTime < duration:
         dt = t - lastTime
@@ -59,7 +59,7 @@ def rainbow_effect(duration=np.inf):
 def fire2(duration = np.inf):
     startTime = time()
     lastTime = startTime
-    fire_colors = [[255, 0, 0], [255, 165, 0], [255, 255, 0]]
+    fire_colors = [RED, ORANGE, YELLOW]#[[255, 0, 0], [255, 165, 0], [255, 255, 0]]
     flicker_intensity = 30
     base_color = [10, 0, 0]
     tree.fill(base_color)

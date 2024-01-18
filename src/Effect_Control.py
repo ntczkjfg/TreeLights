@@ -249,9 +249,10 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
                 fps(func, "spirals (rapid)")
         # spotlight
         elif effect == 20:
-            colors = [[RED, GREEN], [GREEN, BLUE], [BLUE, YELLOW]
-                      , [YELLOW, PURPLE], [PURPLE, GREEN], [RED, BLUE]][rng.integers(6)]
-            if rng.random() < 0.85:
+            if rng.random() < 0.15:
+                colors = [[RED, GREEN], [GREEN, BLUE], [BLUE, YELLOW], [YELLOW, PURPLE]
+                          , [PURPLE, GREEN], [RED, BLUE], [GREEN, PURPLE]][rng.integers(7)]
+            else:
                 colors = [WHITE, BLUE]
             func = lambda: spotlight(colors = colors, duration = 3*duration)
             fps(func, "spotlight")
