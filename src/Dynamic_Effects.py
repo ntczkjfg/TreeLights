@@ -25,6 +25,61 @@ import datetime
 # Falling leaves
 # Jack-o-lantern?                
 
+def rainbow_effect(duration=np.inf):
+    startTime = time()
+    lastTime = startTime
+    rainbow_position = 0  # Initialize rainbow position
+    rainbow_speed = 0.05  # Adjust the speed of the downward movement
+    color_tightness = 0.1  # Adjust the tightness of color changes
+
+    while (t := time()) - startTime < duration:
+        dt = t - lastTime
+        lastTime = t
+
+        # Calculate rainbow color based on z-coordinate (height)
+        rainbow_color = [
+            (
+                np.sin((pixel.z + rainbow_position) * color_tightness) * 127 + 128,
+                np.sin((pixel.z + rainbow_position) * color_tightness + 2) * 127 + 128,
+                np.sin((pixel.z + rainbow_position) * color_tightness + 4) * 127 + 128,
+            )
+            for pixel in tree
+        ]
+
+        # Set colors for each pixel based on rainbow_color
+        for i, pixel in enumerate(tree):
+            pixel.color = rainbow_color[i]
+
+        # Move the rainbow downward by updating the rainbow position
+        rainbow_position += rainbow_speed
+
+        # Update and show the tree
+        tree.show()
+
+def fire2(duration = np.inf):
+    startTime = time()
+    lastTime = startTime
+    fire_colors = [[255, 0, 0], [255, 165, 0], [255, 255, 0]]
+    flicker_intensity = 30
+    base_color = [10, 0, 0]
+    tree.fill(base_color)
+    while (t := time()) - startTime < duration:
+        dt = t - lastTime
+        lastTime = t
+        for pixel in tree:
+            color_variation = int((pixel.z / tree.zMax) * 255)
+            gradient = [255, max(0, 165 - color_variation), 0]
+            if rng.random() < 0.1:
+                pixel.setColor(gradient)
+        for pixel in tree:
+            fade_factor = pixel.z / tree.zMax
+            flicker = int(fade_factor * flicker_intensity)
+            newColor = [max(0, c - flicker) for c in pixel.color]
+            if rng.random() < 0.1:
+                newColor = [0, 0, 0]
+            pixel.setColor(newColor)
+        tree.show()
+
 # Rotates the tree while running alternatingly colored vertical stripes alternatingly up and down
 def alternatingStripes(backgroundC = [0, 10, 90], stripe1C = [5, 90, 5], stripe2C = [70, 15, 15],
                        stripeSpeed = 3, spinSpeed = PI, stripeCount = 2, duration = np.inf):
