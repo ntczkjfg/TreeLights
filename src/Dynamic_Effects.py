@@ -12,6 +12,8 @@ import datetime
 # Vague ideas, not necessarily todo list
 # Upgrade zSpiral to support arbitrary colors like gradient(), plus option to
 # draw spirals instantly - so it can be used to crate any shimmering radial cycle
+# Alternate: Helper function to build sorted angles in a spiral, using code from zSpiral
+# to be fed to gradient function through indices argument
 # Smarter accumulating snow that doesn't fake it as much:  Picks snow path by working
 # backwards from empty LEDs near tree bottom, filling it and neighbors as it falls
 # Random stripes
@@ -24,11 +26,28 @@ import datetime
 # Look like a wizard hat
 # Falling leaves
 # Jack-o-lantern?
+# All blue (possibly even twinkling), with random lights occasionally briefly
+# flickering white
 
-def softGradient(colors = [RED, BLUE, GREEN], softness = 3, variant = 3):
+# Creates a gradient between all the colors specified
+# Can soften or harshen the gradient if desired
+def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
+                 , softness = 2, variant = 3, NORMALIZE = False, indices = None):
+    if colors is None:
+        Color = lambda: rng.integers(0, 256, 3)
+        color1 = Color()
+        color2 = contrastColor(color1, Color)
+        colors = [color1, color2]
     n = len(colors)
+    # Softness determines how much colors overlap
+    # At softness = 2, pure colors with no overlap will exist at single points
+    # At softness = 1, colors will fade to black before fading into the new color (if normalizing)
+    # Each increase in softness by 2 will extend the time it takes for one color to fade
+    # all the way to 0 into the peak of one additional color
+    # fractional values are fine
     softness = min(softness, n)
     period = softness / n
+    # Used to adjust the period of the functions
     p = TAU / period
     width = period / 2
     def Color(x):
@@ -44,22 +63,21 @@ def softGradient(colors = [RED, BLUE, GREEN], softness = 3, variant = 3):
                 factor = 0
             factors.append(factor)
         factors = np.array(factors)
-        factorSum = max(1, np.sum(factors))
-        #factors = factors / factorSum
-        color = colors * np.array(factors).reshape(n, -1)
+        if NORMALIZE:
+            # Normalize the factors so they add to 1
+            factorSum = max(1, np.sum(factors))
+            factors = factors / factorSum
+        color = colors * factors.reshape(n, -1)
         color = np.sum(color, axis = 0)
-        if x <= .03 or x >= 0.97:
-            print(f"x: {x}")
-            print(f"width: {width}")
-            print(f"factors: {factors}")
-            print(f"color: {color}")
-            print(f"bools: {abs(x - 2/n) < width}, {(1/n > x) and (1/n + width > 1) and (((1/n + width) % 1) > x)}, {(1/n < x) and (1/n - width < 0) and (((1/n - width) % 1) < x)}")
-            print(" ")
-        if (maxC := np.max(color)) > 255:
-            color = color / (maxC/255)
-        return color
-    for i, j in enumerate(tree.indices[variant]):
-        tree[j].setColor(Color(tree[j].z/tree.zRange))
+        if not NORMALIZE:
+            # Normalize the color so its brightest component is 255
+            maxC = np.max(color)
+            color = 255 * color / maxC
+        return color.astype(np.uint8)
+    if indices is None:
+        indices = tree.indices[variant]
+    for i, j in enumerate(indices):
+        tree[j].setColor(Color(i/(tree.n - 1)))
     tree.show()
 
 def rainbow_effect(duration=np.inf):

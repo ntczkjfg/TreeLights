@@ -107,10 +107,13 @@ class Tree(neopixel.NeoPixel):
         else:
             a = 1
             b = 0
-        while time() - startTime < duration:
-            dt = time() - lastTime
-            lastTime = time()
+        while (t := time()) - startTime < duration:
+            dt = t - lastTime
+            lastTime = t
             firstCount = min(int(speed * dt), self.n)
+            if firstCount == 0:
+                lastTime = t - dt
+                continue
             first = [self.pixels[indices[a*(i+b)]].color for i in range(firstCount)]
             for i in range(self.n - firstCount):
                 self.pixels[indices[a*(i+b)]].setColor(self.pixels[indices[a*(i + firstCount + b)]].color)

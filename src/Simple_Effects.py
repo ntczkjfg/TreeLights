@@ -61,28 +61,6 @@ def displayImage2(fileName, markTemplate = False):
             im.save(PATH[:-4] + "_marked.png")
     tree.show()
 
-# Creates a gradient betwen all the colors specified
-def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, RED], variant = 2, indices = None):
-    if colors is None:
-        Color = lambda: rng.integers(0, 256, 3)
-        color1 = Color()
-        color2 = contrastColor(color1, Color)
-        colors = np.array([color1, color2, color1])
-    else:
-        colors = np.array(colors)
-    if indices is None:
-        if variant is None:
-            variant = rng.integers(1, 6)
-        indices = tree.indices[variant]
-    separation = 1 / (len(colors) - 1)
-    def Color(f):
-        group = int(f/separation)
-        along = (f % separation)/separation
-        return colors[group] + along * (colors[group + 1] - colors[group])
-    for i in indices:
-        tree[indices[i]].setColor(Color(i/tree.n))
-    tree.show()
-
 # Makes the tree pizza
 def pizza():
     # Pepperonis are randomly generated, and rejected if poorly positioned

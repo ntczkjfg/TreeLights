@@ -313,7 +313,7 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
         # zSpiral
         elif effect == 26:
             startTime = time()
-            twists = rng.uniform(4, 9)
+            twists = rng.uniform(5, 9)
             spiralSpeed = rng.uniform(PI, 3*TAU)
             cycleSpeed = rng.uniform(300, 500)
             spiralBackwards = rng.choice([True, False])
