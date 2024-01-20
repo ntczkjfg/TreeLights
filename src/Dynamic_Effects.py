@@ -26,115 +26,6 @@ import datetime
 # Look like a wizard hat
 # Falling leaves
 # Jack-o-lantern?
-# All blue (possibly even twinkling), with random lights occasionally briefly
-# flickering white
-
-# Creates a gradient between all the colors specified
-# Can soften or harshen the gradient if desired
-def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
-                 , softness = 2, variant = 3, NORMALIZE = False, indices = None):
-    if colors is None:
-        Color = lambda: rng.integers(0, 256, 3)
-        color1 = Color()
-        color2 = contrastColor(color1, Color)
-        colors = [color1, color2]
-    n = len(colors)
-    # Softness determines how much colors overlap
-    # At softness = 2, pure colors with no overlap will exist at single points
-    # At softness = 1, colors will fade to black before fading into the new color (if normalizing)
-    # Each increase in softness by 2 will extend the time it takes for one color to fade
-    # all the way to 0 into the peak of one additional color
-    # fractional values are fine
-    softness = min(softness, n)
-    period = softness / n
-    # Used to adjust the period of the functions
-    p = TAU / period
-    width = period / 2
-    def Color(x):
-        factors = []
-        for i in range(n):
-            if abs(x - i/n) < width:
-                factor = 0.5*np.cos(p*(x - i/n)) + 0.5
-            elif (i/n > x) and (i/n + width > 1) and (((i/n + width) % 1) > x):
-                factor = 0.5*np.cos(p*(x + 1 - i/n)) + 0.5
-            elif (i/n < x) and (i/n - width < 0) and (((i/n - width) % 1) < x):
-                factor = 0.5*np.cos(p*(x - 1 - i/n)) + 0.5
-            else:
-                factor = 0
-            factors.append(factor)
-        factors = np.array(factors)
-        if NORMALIZE:
-            # Normalize the factors so they add to 1
-            factorSum = max(1, np.sum(factors))
-            factors = factors / factorSum
-        color = colors * factors.reshape(n, -1)
-        color = np.sum(color, axis = 0)
-        if not NORMALIZE:
-            # Normalize the color so its brightest component is 255
-            maxC = np.max(color)
-            color = 255 * color / maxC
-        return color.astype(np.uint8)
-    if indices is None:
-        indices = tree.indices[variant]
-    for i, j in enumerate(indices):
-        tree[j].setColor(Color(i/(tree.n - 1)))
-    tree.show()
-
-def rainbow_effect(duration=np.inf):
-    startTime = time()
-    lastTime = startTime
-    rainbow_position = 0  # Initialize rainbow position
-    rainbow_speed = 0.2  # Adjust the speed of the downward movement
-    color_tightness = 2  # Adjust the tightness of color changes
-
-    while (t := time()) - startTime < duration:
-        dt = t - lastTime
-        lastTime = t
-
-        # Calculate rainbow color based on z-coordinate (height)
-        rainbow_color = [
-            (
-                np.sin((pixel.z + rainbow_position) * color_tightness) * 127 + 128,
-                np.sin((pixel.z + rainbow_position) * color_tightness + 2) * 127 + 128,
-                np.sin((pixel.z + rainbow_position) * color_tightness + 4) * 127 + 128,
-            )
-            for pixel in tree
-        ]
-
-        # Set colors for each pixel based on rainbow_color
-        for i, pixel in enumerate(tree):
-            pixel.color = rainbow_color[i]
-
-        # Move the rainbow downward by updating the rainbow position
-        rainbow_position += rainbow_speed
-
-        # Update and show the tree
-        tree.show()
-        return
-
-def fire2(duration = np.inf):
-    startTime = time()
-    lastTime = startTime
-    fire_colors = [RED, ORANGE, YELLOW]#[[255, 0, 0], [255, 165, 0], [255, 255, 0]]
-    flicker_intensity = 30
-    base_color = [10, 0, 0]
-    tree.fill(base_color)
-    while (t := time()) - startTime < duration:
-        dt = t - lastTime
-        lastTime = t
-        for pixel in tree:
-            color_variation = int((pixel.z / tree.zMax) * 255)
-            gradient = [255, max(0, 165 - color_variation), 0]
-            if rng.random() < 0.1:
-                pixel.setColor(gradient)
-        for pixel in tree:
-            fade_factor = pixel.z / tree.zMax
-            flicker = int(fade_factor * flicker_intensity)
-            newColor = [max(0, c - flicker) for c in pixel.color]
-            if rng.random() < 0.1:
-                newColor = [0, 0, 0]
-            pixel.setColor(newColor)
-        tree.show()
 
 # Rotates the tree while running alternatingly colored vertical stripes alternatingly up and down
 def alternatingStripes(backgroundC = [0, 10, 90], stripe1C = [5, 90, 5], stripe2C = [70, 15, 15],
@@ -543,6 +434,57 @@ def fire(duration = np.inf):
                 pixel.flag -= 6
         tree.show()
 
+# Creates a gradient between all the colors specified
+# Can soften or harshen the gradient if desired
+def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
+                 , softness = 2, variant = 3, NORMALIZE = False, indices = None):
+    if colors is None:
+        Color = lambda: rng.integers(0, 256, 3)
+        color1 = Color()
+        color2 = contrastColor(color1, Color)
+        colors = [color1, color2]
+    n = len(colors)
+    # Softness determines how much colors overlap
+    # At softness = 2, pure colors with no overlap will exist at single points
+    # At softness = 1, colors will fade to black before fading into the new color (if normalizing)
+    # Each increase in softness by 2 will extend the time it takes for one color to fade
+    # all the way to 0 into the peak of one additional color
+    # fractional values are fine
+    softness = min(softness, n)
+    period = softness / n
+    # Used to adjust the period of the functions
+    p = TAU / period
+    width = period / 2
+    def Color(x):
+        factors = []
+        for i in range(n):
+            if abs(x - i/n) < width:
+                factor = 0.5*np.cos(p*(x - i/n)) + 0.5
+            elif (i/n > x) and (i/n + width > 1) and (((i/n + width) % 1) > x):
+                factor = 0.5*np.cos(p*(x + 1 - i/n)) + 0.5
+            elif (i/n < x) and (i/n - width < 0) and (((i/n - width) % 1) < x):
+                factor = 0.5*np.cos(p*(x - 1 - i/n)) + 0.5
+            else:
+                factor = 0
+            factors.append(factor)
+        factors = np.array(factors)
+        if NORMALIZE:
+            # Normalize the factors so they add to 1
+            factorSum = max(1, np.sum(factors))
+            factors = factors / factorSum
+        color = colors * factors.reshape(n, -1)
+        color = np.sum(color, axis = 0)
+        if not NORMALIZE:
+            # Normalize the color so its brightest component is 255
+            maxC = np.max(color)
+            color = 255 * color / maxC
+        return color.astype(np.uint8)
+    if indices is None:
+        indices = tree.indices[variant]
+    for i, j in enumerate(indices):
+        tree[j].setColor(Color(i/(tree.n - 1)))
+    tree.show()
+
 # Displays the images in sequence, requires keyboard input
 def imageSlideshow():
     PATH = "/home/pi/Desktop/TreeLights/Images/"
@@ -554,6 +496,28 @@ def imageSlideshow():
         print(image[:-4])
         input()
     tree.clear()
+
+# All blue, flickers random lights white, like twinkling stars
+def nightSky(duration = np.inf):
+    startTime = time()
+    lastTime = startTime
+    flickerLength = 0.2 # seconds
+    p = 0.07 # probability per light per second
+    twinkleTimes = np.zeros(tree.n)
+    tree.fill(BLUE)
+    while (t := time()) - startTime < duration:
+        dt = t - lastTime
+        lastTime = t
+        twinkleTimes -= dt
+        twinkle = (twinkleTimes <= 0) & (rng.random(tree.n) > (1-p)**dt)
+        twinkleTimes[twinkle] = flickerLength
+        twinkleOn = np.where(twinkle)[0]
+        twinkleOff = np.where((-dt < twinkleTimes) & (twinkleTimes < 0))[0]
+        for i in twinkleOn:
+            tree[i].setColor(WHITE)
+        for i in twinkleOff:
+            tree[i].setColor(BLUE)
+        tree.show()
 
 # A growing and shrinking spear that moves up and down and changes colors
 def pulsatingSphere(colors = None, dR = 0.7, dH = 0.3, duration = np.inf):

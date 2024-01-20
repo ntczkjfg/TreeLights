@@ -23,18 +23,17 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
     effect = start
     cycles = 1
     effectCount = 32
+    if setEffect is None:
+        setEffect = [i for i in range(1, 34)]
+    if type(setEffect) == int:
+        setEffect = [setEffect]
     while True:
-        if setEffect:
-            if type(setEffect) == int:
-                effect = setEffect
-            else:
-                while effect == oldEffect: effect = rng.choice(setEffect)
-        elif insequence:
+        if insequence:
             effect += 1
             if effect > effectCount:
                 effect = 1
         else:
-            while effect == oldEffect: effect = 1 + rng.integers(effectCount)
+            while effect == oldEffect: effect = rng.choice(setEffect)
         oldEffect = effect
         # cylinder
         if effect == 1:
@@ -134,7 +133,11 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             fps(func, "randomPlanes")
         # snake
         elif effect == 14:
-            func = lambda: snake(duration = 3*duration, cycles = cycles)
+            if duration < 10:
+                d = duration
+            else:
+                d = np.inf
+            func = lambda: snake(duration = d, cycles = cycles)
             fps(func, "snake")
         # spinningPlane
         elif effect == 15:
@@ -326,12 +329,12 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
         elif effect == 27:
             variant = rng.integers(10)
             if variant < 5:
-                colors = [None, RAINBOW][rng.integers(2)]
+                colors = [None, RAINBOW, [RED, GREEN, BLUE], [RED, BLUE, GREEN]][rng.integers(4)]
                 variant = rng.choice([0, 1, 2, 3, 3, 4, 4, 5, 5])
                 indices = None
             elif variant < 8:
-                colors = [[RED, GREEN, RED], [GREEN, BLUE, GREEN], [BLUE, RED, BLUE]
-                      , [YELLOW, PURPLE, YELLOW], [CYAN, PINK, CYAN], [GREEN, PURPLE, GREEN]][rng.integers(6)]
+                colors = [[RED, GREEN], [GREEN, BLUE], [BLUE, RED]
+                      , [YELLOW, PURPLE], [CYAN, PINK], [GREEN, PURPLE]][rng.integers(6)]
                 variant = 4
                 indices = None
             else: # Random map
@@ -339,8 +342,9 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
                 indices = rng.permutation(tree.n)
                 variant = None
             backwards = rng.choice([True, False])
+            softness = rng.integers(2, 5)
             speed = rng.integers(250, 350)
-            func = lambda: gradient(colors = colors, variant = variant, indices = indices)
+            func = lambda: gradient(colors = colors, softness = softness, variant = variant, indices = indices)
             fps(func, "gradient")
             func = lambda: tree.cycle(variant = variant, backwards = backwards, speed = speed, indices = indices, duration = 3*duration)
             fps(func, "cycle")
@@ -379,10 +383,13 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
                     colors = [COLORS, TRADITIONALCOLORS, TREECOLORS, TREECOLORS2, RAINBOW][rng.integers(5)]
                 speed = rng.integers(50, 151)
                 SEQUENCE = True
-                c = 2*cycles
                 EMPTY = True
                 name = "sequence"
-            func = lambda: randomFill(colors = colors, speed = speed, SEQUENCE = SEQUENCE, EMPTY = EMPTY, cycles = c, duration = 2*duration)
+            if duration < 10:
+                d = 2*duration
+            else:
+                d = np.inf
+            func = lambda: randomFill(colors = colors, speed = speed, SEQUENCE = SEQUENCE, EMPTY = EMPTY, cycles = 2*cycles, duration = d)
             fps(func, name)
         # setAll
         elif effect == 31:
@@ -396,10 +403,13 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             func = lambda: setAllRandom(colors = colors)
             fps(func, "setAllRandom")
             sleep(duration)
+        elif effect == 33:
+            func = lambda: nightSky(duration = duration)
+            fps(func, "nightSky")
             
 # Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
 def unmappedShow(duration = 90):
-    show(setEffect = [2, 7, 8, 23, 24, 27, 30, 31, 32], duration = duration)
+    show(setEffect = [2, 7, 8, 23, 24, 27, 30, 31, 32, 33], duration = duration)
 
 
 if __name__ == "__main__":
