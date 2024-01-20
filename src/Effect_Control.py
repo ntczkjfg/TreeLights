@@ -14,26 +14,29 @@ def fps(func, name):
     startTime = time()
     func()
     duration = time() - startTime
-    print(f"{tree.frames} frame{'s' if tree.frames != 1 else ''} in {round(duration, 2)} seconds for {round(tree.frames/duration, 1)} fps")
+    print(f"{tree.frames} frame{'s' if tree.frames != 1 else ''} in {round(duration, 2)} seconds for {round(tree.frames/duration, 1)} fps{'*' if tree.frames == 1 else ''}")
     tree.clear(FLAGSONLY = True)
 
 # Puts on a curated show of effects
-def show(setEffect = None, duration = 30, insequence = False, start = 0):
+def show(effects = None, duration = 30, insequence = False, start = 0):
     oldEffect = 0
     effect = start
     cycles = 1
-    effectCount = 32
-    if setEffect is None:
-        setEffect = [i for i in range(1, 34)]
-    if type(setEffect) == int:
-        setEffect = [setEffect]
+    effectCount = 33
+    if effects is None:
+        effects = [i for i in range(1, effectCount + 1)]
+    if type(effects) == int:
+        effects = [effects]
     while True:
         if insequence:
             effect += 1
             if effect > effectCount:
                 effect = 1
         else:
-            while effect == oldEffect: effect = rng.choice(setEffect)
+            if len(effects) > 1:
+                while effect == oldEffect: effect = rng.choice(effects)
+            else:
+                effect = effects[0]
         oldEffect = effect
         # cylinder
         if effect == 1:
@@ -343,10 +346,13 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
                 variant = None
             backwards = rng.choice([True, False])
             softness = rng.integers(2, 5)
+            NORMALIZE = rng.choice([True, False, False])
             speed = rng.integers(250, 350)
-            func = lambda: gradient(colors = colors, softness = softness, variant = variant, indices = indices)
+            func = lambda: gradient(colors = colors, softness = softness
+                                    , NORMALIZE = NORMALIZE, variant = variant, indices = indices)
             fps(func, "gradient")
-            func = lambda: tree.cycle(variant = variant, backwards = backwards, speed = speed, indices = indices, duration = 3*duration)
+            func = lambda: tree.cycle(variant = variant, backwards = backwards
+                                      , speed = speed, indices = indices, duration = 3*duration)
             fps(func, "cycle")
         # pizza
         elif effect == 28:
@@ -403,13 +409,14 @@ def show(setEffect = None, duration = 30, insequence = False, start = 0):
             func = lambda: setAllRandom(colors = colors)
             fps(func, "setAllRandom")
             sleep(duration)
+        # nightSky
         elif effect == 33:
             func = lambda: nightSky(duration = duration)
             fps(func, "nightSky")
             
 # Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
-def unmappedShow(duration = 90):
-    show(setEffect = [2, 7, 8, 23, 24, 27, 30, 31, 32, 33], duration = duration)
+def unmappedShow(duration = 30):
+    show(effects = [2, 7, 8, 23, 24, 27, 30, 31, 32, 33], duration = duration)
 
 
 if __name__ == "__main__":
