@@ -1,6 +1,8 @@
-import numpy as np
 from time import sleep, time
 import platform
+
+import numpy as np
+
 if platform.system() == "Windows":
     import FakeTree as neopixel
     import FakeTree as board
@@ -10,7 +12,7 @@ elif platform.system() == "Linux":
     import neopixel
     from new_neopixel_write import neopixel_write
 else:
-    print("Unknown operating system.", platform.system())
+    raise Exception(f'Unknown operating system: {platform.system()}')
 
 LED_PIN = board.D18
 

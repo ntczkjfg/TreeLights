@@ -359,12 +359,12 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
             func = lambda: pizza()
             fps(func, "pizza")
             sleep(duration)
-        # trafficCone
+        # traffic_cone
         elif effect == 29:
-            func = lambda: trafficCone()
-            fps(func, "trafficCone")
+            func = lambda: traffic_cone()
+            fps(func, "traffic_cone")
             sleep(duration)
-        # randomFill
+        # random_fill
         elif effect == 30:
             variant = rng.integers(3)
             if variant == 0:
@@ -373,7 +373,7 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
                 SEQUENCE = False
                 c = 2*cycles
                 EMPTY = True
-                name = "randomFill"
+                name = "random_fill"
             elif variant == 1:
                 colors = [[BLUE, WHITE], [RED, GREEN], [YELLOW, PURPLE], [WHITE, GREEN]
                           , [ORANGE, BLUE], [RED, RED, RED, WHITE, WHITE, WHITE, BLUE, BLUE]][rng.integers(6)]
@@ -395,19 +395,19 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
                 d = 2*duration
             else:
                 d = np.inf
-            func = lambda: randomFill(colors = colors, speed = speed, SEQUENCE = SEQUENCE, EMPTY = EMPTY, cycles = 2*cycles, duration = d)
+            func = lambda: random_fill(colors = colors, speed = speed, SEQUENCE = SEQUENCE, EMPTY = EMPTY, cycles = 2*cycles, duration = d)
             fps(func, name)
-        # setAll
+        # set_all
         elif effect == 31:
             colors = [None, COLORS][rng.integers(2)]
-            func = lambda: setAll(colors = colors)
-            fps(func, "setAll")
+            func = lambda: set_all(colors = colors)
+            fps(func, "set_all")
             sleep(duration)
-        # setAllRandom
+        # set_all_random
         elif effect == 32:
             colors = [None, COLORS, TREECOLORS, TREECOLORS2, RAINBOW, TRADITIONALCOLORS][rng.integers(6)]
-            func = lambda: setAllRandom(colors = colors)
-            fps(func, "setAllRandom")
+            func = lambda: set_all_random(colors = colors)
+            fps(func, "set_all_random")
             sleep(duration)
         # nightSky
         elif effect == 33:

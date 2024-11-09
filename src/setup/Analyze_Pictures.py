@@ -1,29 +1,30 @@
-import os
+from pathlib import Path
 from time import time, sleep
 import numpy as np
-import pickle
+import json
 from PIL import Image
 
+path = Path('C:/Users/User/Desktop/TreePhotos/')
+cwd = Path.cwd()
+parent_path = cwd.parent.parent
+TreePhotos_path = parent_path / 'TreePhotos'
+Trees_path = parent_path / 'Trees'
 
-
-PATH = "C:/Users/User/Desktop/TreePhotos/"
-
-# If True, analyzeImages() will place a green square on each image where it found an LED.
+# If True, analyze_images() will place a green square on each image where it found an LED.
 # Will place a yellow square where it thinks an LED may be, but wasn't certain enough to commit.
-MARK_IMAGES = True
+MARK_IMAGES = False
 
-imageCoordinates = None
+image_coordinates = None
 LED_COUNT = 0
 
-# imageCoordinates is pre-computed.  Running analyzeImages() will disregard
-# the pre-computed version and make a new one.  Takes several hours to run.  Holds the calculated 3D coordinates
+# image_coordinates is pre-computed.Running analyze_images() will disregard
+# the pre-computed version and make a new one.Holds the calculated 3D coordinates
 # of each LED in each camera angle.
-def loadImageCoordinates():
-    global imageCoordinates
-    global LED_COUNT
-    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/imageCoordinates.pickle", "rb") as f:
-        imageCoordinates = pickle.load(f)
-    LED_COUNT = len(imageCoordinates[0])
+def load_image_coordinates():
+    global image_coordinates, LED_COUNT
+    with open(Trees_path / 'image_coordinates.json', 'r') as f:
+        image_coordinates = json.load(f)
+    LED_COUNT = len(image_coordinates[0])
 
 # data will hold all our data related to the LED locating process.  
 # data[i] will hold data for the i-th LED.
@@ -37,100 +38,91 @@ data = []
 # coordinates will hold the final calculation, intended for input into the LED control program
 coordinates = []
 
-def analyzeImages():
-    global imageCoordinates
-    startTime = time()
+def analyze_images():
+    global image_coordinates, LED_COUNT
+    start_time = time()
     # Will hold a list of coordinates for all LEDs from all positions
     # First index is the camera angle.  Second index is the LED.  Third index is the x,y,z coordinate.  
-    imageCoordinates = []
-    # Get list of folders in PATH.  Should be 8 folders named 1-8.  
-    dirList = os.listdir(PATH)
-    print("Done with...", end = " ") # Primitive progress bar
-    for directory in dirList:
-        # Get list of images in directory.  Should be LED_COUNT of them from 000.jpg to [LED_COUNT-1].jpg.
-        imgList = os.listdir(PATH + directory)
+    image_coordinates = []
+    # Get list of folders in path.  Should be 8 folders named 1-8.  
+    print('Done with...', end = ' ') # Primitive progress bar
+    import cv2
+    for directory in path.iterdir():
         # Will hold coordinates of all LEDs in this directory
-        coordinatesTemp = []
-        for image in imgList:
-            with Image.open(PATH + directory + "/" + image) as im:
-                img = im.load()
-                # Tracks brightest pixel found so far:  [brightness, x, y]
-                brightest = [0, 0, 0]
-                # Checks all pixels in a 2*size+1 square centered on x, y.  Should size it to roughly approximate
-                # the typical smallest LED size at whatever image resolution you used.  
-                # ranges below avoid the edges of the image where the size of the box would leave the image bounds
-                size = 2
-                for x in range(size, im.size[0] - size):
-                    # range below was calculated manually to exclude regions of the image where the LEDs will never appear.
-                    # Replace with just range(size, im.size[1] - size) if you're using a different image set and don't want to exclude
-                    # your own regions similarly.  This is just done for speed improvements.  
-                    for y in range(int(max(-2.7748*x + 727, size, 2.79762*x - 973.57)), im.size[1] - size):
-                        # The LEDs light up pure blue, but we check for red because the LED itself is bright enough to
-                        # show up as white to the camera, helping prevent false positives by objects lit up bright blue
-                        # by the LED itself
-                        redness = 0
-                        for i in range(x-size, x+size+1):
-                            for j in range(y-size, y+size+1):
-                                redness += img[i, j][0]
-                        redness = redness / (2*size + 1)**2
-                        if redness > brightest[0]:
-                            brightest = [redness, x, y]
-                # Only accept the found point if it meets some brightness threshold.
-                # Manually tuned.  
-                if brightest[0] > 80:
-                    if MARK_IMAGES:
+        coordinates_temp = []
+        for image in directory.iterdir():
+            with Image.open(image) as im:
+                img_size = im.size
+                img_np = np.array(im)
+            # For each pixel in the image, the below code sums up the 0-255 red channel values in the box
+            # of size (2*size+1)x(2*size+1) centered on each pixel, then reports which has the highest value
+            # So, it finds the pixel in the image with the most red in its immediate area
+            size = 2
+            kernel = np.ones((2*size + 1, 2*size + 1), np.float32)
+            red_channel = img_np[:, :, 0].astype(np.float32)
+            redness_sum = cv2.filter2D(red_channel, -1, kernel, borderType=cv2.BORDER_CONSTANT)
+            brightest_value = np.max(redness_sum)
+            y, x = np.unravel_index(np.argmax(redness_sum), redness_sum.shape)
+            brightest = [int(brightest_value), x, y]
+            # Only accept the found point if it meets some brightness threshold.
+            # Manually tuned.  
+            if brightest[0] > 80 * (2*size + 1)**2:
+                if MARK_IMAGES:
+                    with Image.open(image) as im:
                         for x in range(brightest[1] - size, brightest[1] + size + 1):
                             for y in range(brightest[2] - size, brightest[2] + size + 1):
                                 im.putpixel((x, y), (0, 255, 0))
-                        im.save(PATH + directory + "/" + image)
-                    # Half of the width of the image, used to adjust the coordinates below
-                    horizontalOffset = round(im.size[0]/2)
-                    # Using im.size[1]-brightest[2] for z-coordinates adjusts so the z-coordinate is 0 at the bottom of
-                    # the image instead of the top, as is default
-                    # These all calculate a point in 3D space such that a line between the camera and the point will intersect the LED.
-                    # Imagine the picture as a plane perpendicular to the sight of the camera, with its bottom center pixel at the origin.
-                    # The LED is then given those 3D coordinates based on its position in that picture.  
-                    if directory == "1": # From positive x-axis
-                        coordinatesTemp.append([0, brightest[1] - horizontalOffset, im.size[1] - brightest[2]])
-                    elif directory == "2": # From quadrant 1
-                        coordinatesTemp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), im.size[1] - brightest[2]])
-                    elif directory == "3": # From positive y-axis
-                        coordinatesTemp.append([-(brightest[1] - horizontalOffset), 0, im.size[1] - brightest[2]])
-                    elif directory == "4": # From quadrant 2
-                        coordinatesTemp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), im.size[1] - brightest[2]])
-                    elif directory == "5": # From negative x-axis
-                        coordinatesTemp.append([0, -(brightest[1] - horizontalOffset), im.size[1] - brightest[2]])
-                    elif directory == "6": # From quadrant 3
-                        coordinatesTemp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), im.size[1] - brightest[2]])
-                    elif directory == "7": # From negative y-axis
-                        coordinatesTemp.append([brightest[1] - horizontalOffset, 0, im.size[1] - brightest[2]])
-                    elif directory == "8": # From quadrant 4
-                        coordinatesTemp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), im.size[1] - brightest[2]])
-                # Didn't find anything particularly red, assume LED was occluded and data is bad
-                else:
-                    if MARK_IMAGES:
+                        im.save(image)
+                # Half of the width of the image, used to adjust the coordinates below
+                horizontalOffset = round(img_size[0] / 2)
+                # Using im.size[1]-brightest[2] for z-coordinates adjusts so the z-coordinate is 0 at the bottom of
+                # the image instead of the top, as is default
+                # These all calculate a point in 3D space such that a line between the camera and the point will intersect the LED.
+                # Imagine the picture as a plane perpendicular to the sight of the camera, with its bottom center pixel at the origin.
+                # The LED is then given those 3D coordinates based on its position in that picture.  
+                if directory == '1': # From positive x-axis
+                    coordinates_temp.append([0, brightest[1] - horizontalOffset, img_size[1] - brightest[2]])
+                elif directory == '2': # From quadrant 1
+                    coordinates_temp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
+                elif directory == '3': # From positive y-axis
+                    coordinates_temp.append([-(brightest[1] - horizontalOffset), 0, img_size[1] - brightest[2]])
+                elif directory == '4': # From quadrant 2
+                    coordinates_temp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
+                elif directory == '5': # From negative x-axis
+                    coordinates_temp.append([0, -(brightest[1] - horizontalOffset), img_size[1] - brightest[2]])
+                elif directory == '6': # From quadrant 3
+                    coordinates_temp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
+                elif directory == '7': # From negative y-axis
+                    coordinates_temp.append([brightest[1] - horizontalOffset, 0, img_size[1] - brightest[2]])
+                elif directory == '8': # From quadrant 4
+                    coordinates_temp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
+            # Didn't find anything particularly red, assume LED was occluded and data is bad
+            else:
+                print(brightest[0])
+                if MARK_IMAGES:
+                    with Image.open(image) as im:
                         for x in range(brightest[1] - size, brightest[1] + size + 1):
                             for y in range(brightest[2] - size, brightest[2] + size + 1):
                                 im.putpixel((x, y), (255, 255, 0))
-                        im.save(PATH + directory + "/" + image)
-                    # Can't just skip the coordinates or the index of everything after will be off by 1
-                    coordinatesTemp.append(None)
+                        im.save(image)
+                # Can't just skip the coordinates or the index of everything after will be off by 1
+                coordinates_temp.append(None)
             # So the user isn't left wondering how much longer is left...
-            if int(image[0:3]) % 100 == 0:
-                timePassed = int(time() - startTime)
-                print(str(timePassed) + "s", directory + "/" + image, end = ", ")
+            if int(image.name[0:3]) % 100 == 0:
+                time_passed = int(time() - start_time)
+                print(str(time_passed) + 's', image.relative_to(path), end = ', ')
         # Just to get the newline character
         print()
-        imageCoordinates.append(coordinatesTemp)
-    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/imageCoordinates.pickle", "wb") as f:
-        pickle.dump(imageCoordinates, f)
-    print(imageCoordinates)
-    LED_COUNT = len(imageCoordinates[0])
+        image_coordinates.append(coordinates_temp)
+    Trees_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(Trees_path / 'image_coordinates.json', 'w') as f:
+        json.dump(image_coordinates, f, indent = 4)
+    LED_COUNT = len(image_coordinates[0])
 
-# Takes data in 'imageCoordinates' from analyzeImages() (Or pre-computed) and populates 'data' with appropriate points
+# Takes data in 'image_coordinates' from analyze_images() (or pre-computed) and populates 'data' with appropriate points
 # in appropriate orders with appropriate vectors from camera to point
 # cameraDist and cameraHeight should be given in units of pixels.  
-def calcCoordsAndVectors(cameraDist, cameraHeight):
+def calc_coords_and_vectors(cameraDist, cameraHeight):
     global data
     data = [[[], [], []] for i in range(LED_COUNT)]
     # Camera moves counterclockwise in 45-degree increments
@@ -143,12 +135,12 @@ def calcCoordsAndVectors(cameraDist, cameraHeight):
               , [0, -cameraDist, cameraHeight] # Negative y-axis
               , [.7071*cameraDist, -.7071*cameraDist, cameraHeight]]) # Quadrant 4
     for i in range(LED_COUNT):
-        for j in range(len(imageCoordinates)):
-            if imageCoordinates[j][i] == None:
+        for j in range(len(image_coordinates)):
+            if image_coordinates[j][i] == None:
                 continue
             # Appends a point and a vector from the camera to the point
-            data[i][0].append([imageCoordinates[j][i]
-                               , list(np.array(imageCoordinates[j][i]) - camera[j])])
+            data[i][0].append([image_coordinates[j][i]
+                               , list(np.array(image_coordinates[j][i]) - camera[j])])
 
 # Each LED had up to eight lines defined by the eight images that were
 # taken of it, given by the vector equation v(t) = p + t*d, where p is the
@@ -156,7 +148,7 @@ def calcCoordsAndVectors(cameraDist, cameraHeight):
 # camera to that point.  This function calculates the point on each of these
 # lines closest to each of the other lines, for up to 56 points total.
 # These points are stored in a list and put in data[i][1].  
-def calcNearestPoints():
+def calc_nearest_points():
     for LED in data:
         # Holds the points for the i-th LED
         iPoints = []
@@ -182,16 +174,16 @@ def calcNearestPoints():
 
 # Now we average the points calculated for each LED in the above code
 # and take this as our final coordinates.
-def calcAveragePoints():
+def calc_average_points():
     # Hold the index of any LED which had either 0 or 1 usable images, from which a 3D position cannot
     # be calculated.  These will instead be calculated by interpolating the position of its neighbors.  
-    errorLEDs = []
+    error_LEDs = []
     for i, LED in enumerate(data):
         # Happens if the LED is only clearly visible in 0 or 1 images
-        # Add to errorLEDs so we know to interpolate its position later
+        # Add to error_LEDs so we know to interpolate its position later
         if LED[1] == []:
-            print("Not enough data for", i)
-            errorLEDs.append(i)
+            print('Not enough data for', i)
+            error_LEDs.append(i)
             coordinates.append(np.array([0, 0, 0]))
             continue
         point = [0, 0, 0]
@@ -199,21 +191,21 @@ def calcAveragePoints():
             total = 0
             for k in range(len(LED[1])):
                 total += LED[1][k][j]
-            point[j] = total/len(LED[1])
+            point[j] = total / len(LED[1])
         coordinates.append(np.array(point))
     # Interpolate LEDs which didn't have enough data to calculate a position
-    # Gives up if there's more than one error in a row, will be fixed later in findErrors() anyways
-    for i in errorLEDs:
-        print("Interpolating", i)
-        if i-1 not in errorLEDs and i+1 not in errorLEDs:
+    # Gives up if there's more than one error in a row, will be fixed later in find_errors() anyways
+    for i in error_LEDs:
+        print('Interpolating', i)
+        if i-1 not in error_LEDs and i+1 not in error_LEDs:
             coordinates[i] = (coordinates[i-1] + coordinates[i+1])/2
 
 # Calculates the average distance between consecutive LEDs.
 # If two consecutive LEDs are more than double this average distance, it's assumed
 # there's an error.  
-def findErrors(first = True):
+def find_errors(first = True):
     if not first:
-        print("Second findErrors")
+        print('Second find_errors')
     totalDistance = 0
     for i in range(LED_COUNT - 1):
         totalDistance += np.linalg.norm(coordinates[i] - coordinates[i+1])
@@ -234,7 +226,7 @@ def findErrors(first = True):
     for i in range(LED_COUNT - 1):
         if i in goodVals:
             continue
-        print("Fixing", i)
+        print('Fixing', i)
         # a will be the last good index, b will be the next good index
         # We will then interpolate all bad LEDs between a and b.  
         # If two LEDs appear consecutively, it's fairly likely only the
@@ -250,7 +242,7 @@ def findErrors(first = True):
             coordinates[j] = coordinates[a] + baDist*(j-a)/badGaps
             goodVals.append(j)
         if first:
-            findErrors(False)
+            find_errors(False)
 
 # Normalize coordinates to GIFT format:  x- and y-values are limited from -1 to 1, and
 # z-values start at 0 and go as high as they need to at the same scale as the x- and y-values
@@ -269,19 +261,19 @@ def normalize():
 # Calculate everything.  Does not analyze images.  
 def calc():
     global coordinates
-    loadImageCoordinates()
+    load_image_coordinates()
     pixelsPerInch = 16.85 # Manually calculated, as are below two values
     cameraDist = 50 * pixelsPerInch
     cameraHeight = 31.25 * pixelsPerInch
-    calcCoordsAndVectors(cameraDist, cameraHeight)
-    calcNearestPoints()
-    calcAveragePoints()
-    findErrors()
+    calc_coords_and_vectors(cameraDist, cameraHeight)
+    calc_nearest_points()
+    calc_average_points()
+    find_errors()
     normalize()
     coordinates = [[round(coord, 5) for coord in coordinate] for coordinate in coordinates]
-    with open("C:/Users/User/My Stuff/GitHub/TreeLights/Trees/coordinates.list", "wb") as f:
-        pickle.dump(coordinates, f)
-    print(coordinates)
+    Trees_path.parent.mkdir(parents = True, exist_ok = True)
+    with open(Trees_path / 'coordinates.list', 'w') as f:
+        json.dump(coordinates, f, indent=4)
 
-analyzeImages()
+analyze_images()
 calc()

@@ -1,13 +1,7 @@
-import pickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import os
 
-current_directory = os.getcwd()
-parent_directory = os.path.dirname(current_directory)
-trees_directory = os.path.join(parent_directory, "Trees")
-coordinates_file = os.path.join(trees_directory, "coordinates.list")
 plt.rcParams['toolbar'] = 'None'
 
 # via https://stackoverflow.com/questions/45729092/make-interactive-matplotlib-window-not-pop-to-front-on-each-update-windows-7

@@ -15,7 +15,7 @@ def pickle():
     tree.show()
 
 # Displays images
-def displayImage(fileName, markTemplate = False):
+def display_image(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
     with Image.open(PATH) as im:
         img = im.load()
@@ -37,7 +37,7 @@ def displayImage(fileName, markTemplate = False):
     tree.show()
 
 # Displays images, but with perspective
-def displayImage2(fileName, markTemplate = False):
+def display_image2(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
     eye = np.array([17, 0, 1.5])
     with Image.open(PATH) as im:
@@ -120,7 +120,7 @@ def pokeball():
         tree[i].setColor(WHITE)
     tree.show()
 
-def trafficCone():
+def traffic_cone():
     # Values determined experimentally
     topStripeHeight = 0.715*tree.zMax
     bottomStripeHeight = 0.466*tree.zMax
@@ -136,10 +136,10 @@ def trafficCone():
     tree.show()
 
 # Turns lights on one at a time in random order in random colors, then turns them off in the same fashion
-def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cycles = np.inf, duration = np.inf):
+def random_fill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cycles = np.inf, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     tree.clear()
     done = 0
     cycle = 0
@@ -147,7 +147,7 @@ def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cyc
     limit = tree.n + EMPTY * speed
     order = np.arange(tree.n) if SEQUENCE else rng.permutation(tree.n)
     tree.clear(UPDATE = False)
-    if not EMPTY: setAllRandom(colors = colors)
+    if not EMPTY: set_all_random(colors = colors)
     while (t := time()) - startTime < duration and cycle < cycles:
         dt = t - lastTime
         lastTime = t
@@ -181,16 +181,16 @@ def seizure(duration = np.inf):
         tree.show()
 
 # Sets all LEDs to the same color
-def setAll(colors = None):
-    Color = ColorBuilder(colors)
+def set_all(colors = None):
+    Color = color_builder(colors)
     tree.fill(Color())
     tree.show()
 
 # Sets all LEDs to a random color
-def setAllRandom(colors = None):
+def set_all_random(colors = None):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     for pixel in tree:
         pixel.setColor(Color())
     tree.show()

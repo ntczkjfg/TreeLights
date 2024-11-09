@@ -1,13 +1,15 @@
+from time import sleep, time
+from pathlib import Path
+import datetime
+
+import numpy as np
+
 from Common_Variables import rng, tree, PI, TAU
 from Colors import *
 from Simple_Effects import *
 from Helper_Functions import *
 from Testing_Functions import *
 from Effect_Control import *
-import numpy as np
-from time import sleep, time
-from os import listdir
-import datetime
 
 # Vague ideas, not necessarily todo list
 # Upgrade zSpiral to support arbitrary colors like gradient(), plus option to
@@ -91,7 +93,7 @@ def blink(colors = TRADITIONALCOLORS, groupCount = 7, p = 0.7, delay = 1, durati
     startTime = time()
     lastTime = startTime
     tree.clear(UPDATE = False)
-    setAllRandom(colors)
+    set_all_random(colors)
     for pixel in tree:
         pixel.flag = np.array(pixel.color)
     groups = rng.integers(0, groupCount, tree.n)
@@ -311,7 +313,7 @@ def cylinder(colors = COLORS, duration = np.inf):
 def cylon(color = RED, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(color)
+    Color = color_builder(color)
     color = Color()
     color = np.array([[130*k/np.linalg.norm(color) for k in color]])
     tree.clear()
@@ -339,7 +341,7 @@ def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, 
     # midline and amplitude define a sine function determining brightness as the light fades
     # It will reject a sine with a minimum below 0 or maximum above 1
     startTime = time()
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     amplitude = abs(amplitude)
     if midline < 0 or midline > 1 or amplitude > midline:
         print("Midline must be between 0 and 1, amplitude cannot be larger than midline")
@@ -357,7 +359,7 @@ def fade(colors = TRADITIONALCOLORS, midline = .7, amplitude = .7, speed = 1.5, 
 def fadeRestore(colors = TRADITIONALCOLORS, p = 0.95, halflife = 0.3, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     color_buffer = np.array([Color() for _ in range(tree.n)])
     while (t := time()) - startTime < duration:
         dt = t - lastTime
@@ -441,7 +443,7 @@ def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
     if colors is None:
         Color = lambda: rng.integers(0, 256, 3)
         color1 = Color()
-        color2 = contrastColor(color1, Color)
+        color2 = contrast_color(color1, Color)
         colors = [color1, color2]
     n = len(colors)
     # Softness determines how much colors overlap
@@ -487,12 +489,10 @@ def gradient(colors = [RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE]
 
 # Displays the images in sequence, requires keyboard input
 def imageSlideshow():
-    PATH = "/home/pi/Desktop/TreeLights/Images/"
-    imgList = listdir(PATH)
-    for image in imgList:
-        displayImage(image)
+    for image in Path('/home/pi/Desktop/TreeLights/Images/').iterdir():
+        display_image(image)
         input()
-        displayImage2(image)
+        display_image2(image)
         print(image[:-4])
         input()
     tree.clear()
@@ -523,7 +523,7 @@ def nightSky(duration = np.inf):
 def pulsatingSphere(colors = None, dR = 0.7, dH = 0.3, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     color1 = Color()
     color2 = BLACK
     while not contrast(color1, color2): color2 = Color()
@@ -590,7 +590,7 @@ def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 
 def randomPlanes(colors = COLORS, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     z = 10
     maxZ = 0
     while time() - startTime < duration:
@@ -677,9 +677,9 @@ def spinningPlane(colors = COLORS, variant = 0, speed = 4, width = 0.15, height 
                   , TWOCOLORS = False, BACKGROUND = False, SPINNER = False, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     color1 = Color()
-    color2 = contrastColor(color1, Color)
+    color2 = contrast_color(color1, Color)
     colors = [color1, color2]
     if SPINNER: BACKGROUND, TWOCOLORS = True, True
     colors += [[[0.04, 1][SPINNER] * k for k in colors[0]], [[0.04, 1][SPINNER] * k for k in colors[1]]]
@@ -860,7 +860,7 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
 def sweep(colors = COLORS, speed = 5, CLOCKWISE = False, ALTERNATE = True, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     color = Color()
     newColor = Color()
     speed = abs(speed)
@@ -889,7 +889,7 @@ def sweeper(colors = COLORS[1:], speed = 5, SEQUENCE = True, duration = np.inf):
     if SEQUENCE:
         Color = lambda k: colors[((np.where(np.all(colors == k, axis = 1))[0][0] + 1) % len(colors))]
     else:
-        Color = ColorBuilder(colors)
+        Color = color_builder(colors)
     if SEQUENCE:
         oldColor = colors[0]
         nextColor = colors[1]
@@ -927,7 +927,7 @@ def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, 
     factor = 255 / np.max(intensity*colors)
     if factor < 1:
         colors = (factor * colors).astype(np.uint8)
-    setAllRandom(colors)
+    set_all_random(colors)
     buffer = np.array(tree._pre_brightness_buffer)
     intensity -= 1
     tree.flags = np.full(tree.n, 0.0)
@@ -951,7 +951,7 @@ def twinkle(colors = TRADITIONALCOLORS, intensity = 1.8, length = .3, p = 0.04, 
 def wander(colors = COLORS, wanderTime = 1, variance = None, duration = np.inf):
     startTime = time()
     lastTime = startTime
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     if variance is None:
         variance = wanderTime / 5
     # Start with colors the tree already has, for nice fade-in effect

@@ -160,7 +160,7 @@ def planeTest(sections = 20, variant = "y", startAt = 1):
 
 # Turns on lights one-by-one in the sorted directions
 def sortedTest(colors = None, speed = 1, variant = "z"):
-    Color = ColorBuilder(colors)
+    Color = color_builder(colors)
     index = ["i", "x", "y", "z", "r", "a"].index(variant)
     order = tree.indices[index]
     color = Color()

@@ -1,12 +1,14 @@
-from Tree import Tree
-import numpy as np
-import pickle
+from pathlib import Path
 from time import time
-import os
+import json
 
-current_directory = os.getcwd()
-parent_directory = os.path.dirname(current_directory)
-PATH = os.path.join(parent_directory, "Trees")
+import numpy as np
+
+from Tree import Tree
+
+cwd = Path.cwd()
+parent_directory = cwd.parent
+trees_path = parent_directory / 'Trees'
 rng = np.random.default_rng()
 PI = float(np.pi)
 TAU = 2*PI
@@ -15,12 +17,12 @@ tree = None
 # Saves the supplied coordinates to file
 def saveCoords(coordinates = None):
     if coordinates is None:
-        print("Must supply coordinates to save")
+        print('Must supply coordinates to save')
         return
     coordinates = list(coordinates)
-    with open(os.path.join(PATH, "coordinates.list"), "wb") as f:
-        pickle.dump(coordinates, f)
-    print("Saved coordinates")
+    with open(trees_path / 'coordinates.list', 'w') as f:
+        json.dump(coordinates, f)
+    print('Saved coordinates')
 
 # Makes fake coordinates and builds a tree from them
 # Useful for testing before coordinates have been generated
@@ -37,18 +39,14 @@ def dummyCoordinates(n = 1200):
 def buildTree():
     startTime = time()
     try:
-        with open(os.path.join(PATH, "coordinates.list"), "rb") as f:
-            coordinates = pickle.load(f)
+        with open(trees_path / 'coordinates.list', 'r') as f:
+            coordinates = json.load(f)
     except FileNotFoundError:
-        try:
-            with open("/home/pi/Desktop/TreeLights/Trees/coordinates.list", "rb") as f:
-                coordinates = pickle.load(f)
-        except FileNotFoundError:
-            print("Coordinates not found - making dummy coordinates")
-            coordinates = dummyCoordinates()
+        print('Coordinates not found - making dummy coordinates')
+        coordinates = dummyCoordinates()
     tree = Tree(coordinates)
-    print(f"Built the tree in {round(time() - startTime, 2)} seconds")
+    print(f'Built the tree in {round(time() - startTime, 2)} seconds')
     return tree
 
-if __name__ != "__main__":
+if __name__ != '__main__':
     tree = buildTree()
