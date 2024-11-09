@@ -65,8 +65,8 @@ def check_for_error():
     b = image[:, :, 2]
     threshold_high = 50
     threshold_low = 15
-    red_pixels = (r > threshold_high) & (2*g < r) & (2*b < r)
-    green_pixels = (g > threshold_high) & (2*r < g) & (2*b < g)
+    red_pixels = (r > threshold_high) & (g < threshold_low) & (b < threshold_low)
+    green_pixels = (g > threshold_high) & (r < threshold_low) & (b < threshold_low)
     if red_pixels.any() or green_pixels.any():
         return True
     return False
