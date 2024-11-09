@@ -145,7 +145,7 @@ def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cyc
     cycle = 0
     ON = True
     limit = tree.n + EMPTY * speed
-    order = np.arange(800) if SEQUENCE else rng.permutation(tree.n)
+    order = np.arange(tree.n) if SEQUENCE else rng.permutation(tree.n)
     tree.clear(UPDATE = False)
     if not EMPTY: setAllRandom(colors = colors)
     while (t := time()) - startTime < duration and cycle < cycles:
@@ -160,7 +160,7 @@ def randomFill(colors = COLORS, speed = 100, SEQUENCE = False, EMPTY = True, cyc
         done += lightsToDo
         if done >= limit:
             done = 0
-            order = np.arange(800) if SEQUENCE else rng.permutation(tree.n)
+            order = np.arange(tree.n) if SEQUENCE else rng.permutation(tree.n)
             if ON:
                 if EMPTY: ON = False
                 limit = tree.n

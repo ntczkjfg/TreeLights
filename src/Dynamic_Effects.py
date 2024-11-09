@@ -172,7 +172,7 @@ def clock(duration = np.inf):
     # Aim to put center of clock here, at y = 0, with a large x-value
     centerZ = tree.zMin + 0.35*tree.zRange
     # All coordinates, with index appended on
-    coords = np.hstack((tree.coordinates[:,0:3], np.reshape(np.arange(800), (-1, 1))))
+    coords = np.hstack((tree.coordinates[:,0:3], np.reshape(np.arange(tree.n), (-1, 1))))
     # Sort by z distance from centerZ, keep closest 5%
     coords[:,2] = abs(coords[:,2] - centerZ)
     sortOrder = np.argsort(coords[:,2])
@@ -329,7 +329,7 @@ def cylon(color = RED, duration = np.inf):
             center += deltaC*dt
         dists = np.abs(tree.y - center)
         factors = np.maximum(1/13, -dists/.3 + 1)
-        colors = factors.reshape(800, 1) * color
+        colors = factors.reshape(tree.n, 1) * color
         for i, pixel in enumerate(tree):
             pixel.setColor(colors[i])
         tree.show()

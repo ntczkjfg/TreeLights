@@ -415,12 +415,12 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
             fps(func, "nightSky")
             
 # Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
-def unmappedShow(duration = 30):
+def unmapped_show(duration = 30):
     show(effects = [2, 7, 8, 23, 24, 27, 30, 31, 32, 33], duration = duration)
 
 
 if __name__ == "__main__":
     try:
-        show()
+        unmapped_show()
     except KeyboardInterrupt:
         print("KeyboardInterrupt")

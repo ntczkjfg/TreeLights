@@ -25,7 +25,7 @@ def saveCoords(coordinates = None):
 # Makes fake coordinates and builds a tree from them
 # Useful for testing before coordinates have been generated
 # Also useful for testing things on Windows where accurate maps matter much less
-def dummyCoordinates(n = 800):
+def dummyCoordinates(n = 1200):
     coordinates = []
     while len(coordinates) < n:
         point = [rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(0, 4)]
