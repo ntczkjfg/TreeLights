@@ -62,7 +62,7 @@ def analyze_images():
             redness_sum = cv2.filter2D(red_channel, -1, kernel, borderType=cv2.BORDER_CONSTANT)
             brightest_value = np.max(redness_sum)
             y, x = np.unravel_index(np.argmax(redness_sum), redness_sum.shape)
-            brightest = [int(brightest_value), x, y]
+            brightest = [int(brightest_value), int(x), int(y)]
             # Only accept the found point if it meets some brightness threshold.
             # Manually tuned.  
             if brightest[0] > 80 * (2*size + 1)**2:
@@ -79,25 +79,26 @@ def analyze_images():
                 # These all calculate a point in 3D space such that a line between the camera and the point will intersect the LED.
                 # Imagine the picture as a plane perpendicular to the sight of the camera, with its bottom center pixel at the origin.
                 # The LED is then given those 3D coordinates based on its position in that picture.  
-                if directory == '1': # From positive x-axis
+                if directory.name == '1': # From positive x-axis
                     coordinates_temp.append([0, brightest[1] - horizontalOffset, img_size[1] - brightest[2]])
-                elif directory == '2': # From quadrant 1
+                elif directory.name == '2': # From quadrant 1
                     coordinates_temp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
-                elif directory == '3': # From positive y-axis
+                elif directory.name == '3': # From positive y-axis
                     coordinates_temp.append([-(brightest[1] - horizontalOffset), 0, img_size[1] - brightest[2]])
-                elif directory == '4': # From quadrant 2
+                elif directory.name == '4': # From quadrant 2
                     coordinates_temp.append([round(-(brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
-                elif directory == '5': # From negative x-axis
+                elif directory.name == '5': # From negative x-axis
                     coordinates_temp.append([0, -(brightest[1] - horizontalOffset), img_size[1] - brightest[2]])
-                elif directory == '6': # From quadrant 3
+                elif directory.name == '6': # From quadrant 3
                     coordinates_temp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round(-(brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
-                elif directory == '7': # From negative y-axis
+                elif directory.name == '7': # From negative y-axis
                     coordinates_temp.append([brightest[1] - horizontalOffset, 0, img_size[1] - brightest[2]])
-                elif directory == '8': # From quadrant 4
+                elif directory.name == '8': # From quadrant 4
                     coordinates_temp.append([round((brightest[1] - horizontalOffset)/2**0.5, 5), round((brightest[1] - horizontalOffset)/2**0.5, 5), img_size[1] - brightest[2]])
+                else:
+                    raise Exception(f'Unknown directory: {directory}')
             # Didn't find anything particularly red, assume LED was occluded and data is bad
             else:
-                print(brightest[0])
                 if MARK_IMAGES:
                     with Image.open(image) as im:
                         for x in range(brightest[1] - size, brightest[1] + size + 1):
@@ -107,9 +108,9 @@ def analyze_images():
                 # Can't just skip the coordinates or the index of everything after will be off by 1
                 coordinates_temp.append(None)
             # So the user isn't left wondering how much longer is left...
-            if int(image.name[0:3]) % 100 == 0:
+            if int(image.name[0:4]) % 100 == 0:
                 time_passed = int(time() - start_time)
-                print(str(time_passed) + 's', image.relative_to(path), end = ', ')
+                print(str(time_passed) + 's', image.relative_to(parent_path), end = ', ')
         # Just to get the newline character
         print()
         image_coordinates.append(coordinates_temp)
