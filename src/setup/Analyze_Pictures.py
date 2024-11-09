@@ -4,7 +4,6 @@ import numpy as np
 import json
 from PIL import Image
 
-path = Path('C:/Users/User/Desktop/TreePhotos/')
 cwd = Path.cwd()
 parent_path = cwd.parent.parent
 TreePhotos_path = parent_path / 'TreePhotos'
@@ -47,7 +46,7 @@ def analyze_images():
     # Get list of folders in path.  Should be 8 folders named 1-8.  
     print('Done with...', end = ' ') # Primitive progress bar
     import cv2
-    for directory in path.iterdir():
+    for directory in TreePhotos_path.iterdir():
         # Will hold coordinates of all LEDs in this directory
         coordinates_temp = []
         for image in directory.iterdir():
@@ -262,8 +261,8 @@ def normalize():
 def calc():
     global coordinates
     load_image_coordinates()
-    pixelsPerInch = 16.85 # Manually calculated, as are below two values
-    cameraDist = 50 * pixelsPerInch
+    pixelsPerInch = 11.9 # Manually calculated, as are below two values
+    cameraDist = 72 * pixelsPerInch
     cameraHeight = 31.25 * pixelsPerInch
     calc_coords_and_vectors(cameraDist, cameraHeight)
     calc_nearest_points()
