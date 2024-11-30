@@ -1,9 +1,11 @@
+from time import sleep, time
+
+import numpy as np
+
 from Common_Variables import rng, tree, PI, TAU, saveCoords, buildTree
 from Colors import *
 from Simple_Effects import *
 from Helper_Functions import *
-import numpy as np
-from time import sleep, time
 
 # Has each light blink out its index number in binary
 def binary(SLEEP = .5, backwards = False):
@@ -119,11 +121,11 @@ def maxFramerate(duration = 10, variant = 0):
     tree.frames = 0
     while time() - startTime < duration:
         if variant == 0: # tree.setColors
-            colors = rng.integers(0, 256, 2400)
+            colors = rng.integers(0, 256, 3*tree.n)
             tree.setColors(colors)
         elif variant == 1: # pixel.setColor
-            colors = rng.integers(0, 256, 2400)
-            colors = colors.reshape(800, 3)
+            colors = rng.integers(0, 256, 3*tree.n)
+            colors = colors.reshape(tree.n, 3)
             for i, pixel in enumerate(tree):
                 pixel.setColor(colors[i])
         elif variant == 2: # No color changing
@@ -164,9 +166,9 @@ def sortedTest(colors = None, speed = 1, variant = "z"):
     index = ["i", "x", "y", "z", "r", "a"].index(variant)
     order = tree.indices[index]
     color = Color()
-    for i in order:
+    for count, i in enumerate(order, start = 1):
         tree[i].setColor(color)
-        if i % speed == 0:
+        if count % speed == 0 or count == tree.n:
             tree.show()
 
 # Illuminates the interior and surface LEDs on the tree in different colors

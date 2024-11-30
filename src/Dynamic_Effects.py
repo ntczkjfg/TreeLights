@@ -397,6 +397,7 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
 
 # Meant to imitate a fire
 def fire(duration = np.inf):
+    return # Currently bugged, needs fixing - optimizing?
     startTime = time()
     lastTime = startTime
     one = np.array([75, 55, 0])

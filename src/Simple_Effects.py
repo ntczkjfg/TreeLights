@@ -14,6 +14,17 @@ def pickle():
     tree[49].setColor(RED)
     tree.show()
 
+# Makes the tree look like a candy corn
+def candy_corn():
+    for pixel in tree:
+        if pixel.z <= 0.25*tree.zMax:
+            pixel.setColor(YELLOW)
+        elif pixel.z <= 0.7*tree.zMax:
+            pixel.setColor(ORANGE)
+        else:
+            pixel.setColor(WHITE)
+    tree.show()
+
 # Displays images
 def display_image(fileName, markTemplate = False):
     PATH = "/home/pi/Desktop/TreeLights/Images/" + fileName
@@ -67,7 +78,7 @@ def pizza():
     # Try to make this many - usually only accept 4-7 total
     pepperoniCount = 100
     pepperoniRadius = .35
-    crustHeight = 0.7
+    crustHeight = 0.15*tree.zMax
     cheeseColor = [255, 140, 0]
     crustColor = [64, 12, 0]
     # Entire backside of the pizza plus the bottom part is crust

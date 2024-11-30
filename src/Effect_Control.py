@@ -22,7 +22,7 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
     oldEffect = 0
     effect = start
     cycles = 1
-    effectCount = 33
+    effectCount = 34
     if effects is None:
         effects = [i for i in range(1, effectCount + 1)]
     if type(effects) == int:
@@ -413,6 +413,11 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
         elif effect == 33:
             func = lambda: nightSky(duration = duration)
             fps(func, "nightSky")
+        # candy corn
+        elif effect == 34:
+            func = lambda: candy_corn()
+            fps(func, "candy_corn")
+            sleep(duration)
             
 # Puts on a curated show of effects, using only effects that don't require an accurate light tree mapping
 def unmapped_show(duration = 30):
@@ -421,6 +426,6 @@ def unmapped_show(duration = 30):
 
 if __name__ == "__main__":
     try:
-        unmapped_show()
+        show()
     except KeyboardInterrupt:
         print("KeyboardInterrupt")

@@ -19,7 +19,7 @@ def saveCoords(coordinates = None):
     if coordinates is None:
         print('Must supply coordinates to save')
         return
-    coordinates = list(coordinates)
+    coordinates = [list(coordinate) for coordinate in coordinates]
     with open(trees_path / 'coordinates.list', 'w') as f:
         json.dump(coordinates, f)
     print('Saved coordinates')
