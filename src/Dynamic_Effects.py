@@ -316,7 +316,6 @@ def cylon(color = RED, duration = np.inf):
     Color = color_builder(color)
     color = Color()
     color = np.array([[130*k/np.linalg.norm(color) for k in color]])
-    tree.clear()
     center = 0
     deltaC = 1.7
     while time() - startTime < duration:
@@ -397,7 +396,7 @@ def fallingColors(colors = [RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE], dur
 
 # Meant to imitate a fire
 def fire(duration = np.inf):
-    return # Currently bugged, needs fixing - optimizing?
+    #return # Currently bugged, needs fixing - optimizing?
     startTime = time()
     lastTime = startTime
     one = np.array([75, 55, 0])
@@ -405,9 +404,14 @@ def fire(duration = np.inf):
     twoone = two - one
     tree.flags = np.full(tree.n, 0, dtype=object)
     def flagNeighbors(flame):
+        neighbors = np.where(np.isin(tree.i, flame.neighbors) & (tree.z < flame.z) & (((tree.x - flame.x)**2 + (tree.y - flame.y)**2) < .008))[0]
+        for i in neighbors:
+            tree[i].flag = flame.flag - 1
+            if tree[i].flag > 1: flagNeighbors(tree[i])
+        return
         for neighbor in flame.neighbors:
             neighbor = tree[neighbor]
-            if neighbor.z < flame.z and ((neighbor.x - flame.x)**2 + (neighbor.y - flame.y)**2)<.008:
+            if neighbor.z < flame.z and ((neighbor.x - flame.x)**2 + (neighbor.y - flame.y)**2) < .008:
                 neighbor.flag = flame.flag - 1
                 if neighbor.flag > 1: flagNeighbors(neighbor)
     smokeC = np.array([5, 5, 5])
@@ -415,13 +419,15 @@ def fire(duration = np.inf):
         dt = time() - lastTime
         lastTime = time()
         tree.fade(halflife = 0.05, dt = dt)
-        if rng.random() < 2:
+        if rng.random() < .2:
             flames = rng.choice(tree.pixels, 20)
             for i, flame in enumerate(flames):
                 if flame.z > 0.75*tree.zMax or (flame.z > 0.5*tree.zMax and rng.random() < .6):
                     continue
                 flame.flag = 20
+                print(1)
                 flagNeighbors(flame)
+                print(2)
         smoke = np.where((tree.z > 0.65*tree.zMax) & (rng.random(tree.n) < 0.1))[0]
         onetwoone = np.where(tree.z < 1.1*np.cos(0.5*PI*tree.x)*np.cos(0.5*PI*tree.y) + 0.3)[0]
         for i in smoke:
@@ -429,8 +435,10 @@ def fire(duration = np.inf):
         for i in onetwoone:
             tree[i].setColor(one + twoone*rng.random())
         for pixel in tree:
+            if pixel.i in smoke or pixel.i in onetwoone:
+                continue
             if pixel.flag > 0:
-                if rng.random() < 0.9:
+                if True:#rng.random() < 0.9:
                     pixel.setColor(RED)
                 else:
                     pixel.setColor(ORANGE)
@@ -561,13 +569,15 @@ def pulsatingSphere(colors = None, dR = 0.7, dH = 0.3, duration = np.inf):
         tree.show()
 
 # A raining effect
-def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 0, duration = np.inf):
+def rain(colors = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 0, fade = True, duration = np.inf):
     startTime = time()
     lastTime = startTime
+    if len(colors.shape) == 1:
+        colors = np.array(colors)
     width = 0.12
     height = 0.15
     floor = tree.zMin - 0.1
-    newDrop = lambda floor: [rng.random()*TAU, rng.random()*(tree.zMax-floor) + tree.zMax]
+    newDrop = lambda floor: [rng.random()*TAU, rng.random()*(tree.zMax-floor) + tree.zMax, rng.choice(colors)]
     drops = [newDrop(floor) for i in range(dropCount)]
     while time() - startTime < duration:
         dt = time() - lastTime
@@ -581,11 +591,54 @@ def rain(color = CYAN, speed = 5, wind = -4, dropCount = 8, accumulationSpeed = 
                 continue
             wet = np.where((tree.z < floor) | (tree.s & (np.abs(tree.a - drops[i][0]) < width) & (abs(tree.z - drops[i][1]) < height)))[0]
             for j in wet:
-                tree[j].setColor(color)
+                tree[j].setColor(drops[i][2])
         floor += accumulationSpeed*dt
         if floor >= tree.zMax: floor = 0
         tree.show()
-        tree.fade(halflife = 0.125, dt = dt)
+        if fade:
+            tree.fade(halflife = 0.125, dt = dt)
+
+def test_mod(duration = np.inf):
+    startTime = time()
+    lastTime = startTime
+    set_all(WHITE)
+    mod = 20
+    m = 1
+    width = 3
+    speed = 1/200
+    next_time = speed
+    dMod = 0
+    maxMod = np.inf
+    color1 = rng.choice([OFF])
+    color2 = rng.choice([WHITE])
+    while time() - startTime < duration:
+        dt = time() - lastTime
+        lastTime = time()
+        next_time -= dt
+        if next_time <= 0:
+            next_time = speed
+        else:
+            continue
+        for pixel in tree:
+            if ((pixel.i - m) % mod) < width:
+                pixel.setColor(color1)
+            else:
+                pixel.setColor(color2)
+        tree.show()
+        mod += dMod
+        if mod < 1:
+            mod = 1
+            dMod = abs(dMod)
+            color2 = rng.choice(COLORS)
+            while np.all(color2 == color1):
+                color2 = rng.choice(COLORS)
+        if mod > maxMod:
+            mod = maxMod
+            dMod = -abs(dMod)
+            color1 = rng.choice(COLORS)
+            while np.all(color1 == color2):
+                color1 = rng.choice(COLORS)
+        m = (m + 1) % mod
 
 # Random colored planes fly through the tree, leaving trails
 def randomPlanes(colors = COLORS, duration = np.inf):
@@ -625,34 +678,38 @@ def snake(cycles = np.inf, duration = np.inf):
         tree.clear(UPDATE = False)
         snake = [rng.choice(tree)]
         pellet = rng.choice(tree)
-        visited = [] # Prevents loops
+        visited = [snake[0]] # Prevents loops
         while time() - startTime < duration:
             if snake[0] == pellet: # Snake got the food
                 snake += [snake[-1]] # Grow longer
                 while pellet in snake: pellet = rng.choice(tree) # Place new food
-                visited = []
+                visited = [snake[0]]
             destination = None # Where will the snake go?
             for neighbor in snake[0].neighbors:
                 # If the neighbor isn't part of the snake
-                # And the neighbor hasn't already been visited this cycle
                 # and there either isn't a destination yet
                     # or this neighbor is closer to the pellet than the current destination
                 neighbor = tree[neighbor]
-                if (neighbor == pellet
-                    or (neighbor not in snake
-                        and neighbor not in visited
+                if neighbor == pellet:
+                    destination = neighbor
+                    break
+                elif (neighbor not in snake
                         and (destination is None
-                             or np.linalg.norm(neighbor.coordinate - pellet.coordinate) < np.linalg.norm(destination.coordinate - pellet.coordinate)))):
+                             or np.linalg.norm(pellet.coordinate - neighbor.coordinate) < np.linalg.norm(pellet.coordinate - destination.coordinate))):
+                    pattern = visited[-1:] + [neighbor]
+                    if any(visited[i:i+len(pattern)] == pattern for i in range(len(visited) - len(pattern))):
+                        # Avoid loops
+                        continue
                     freeSpots = 0
                     for neigh in neighbor.neighbors:
-                        if tree[neigh] not in snake and tree[neigh] not in visited: freeSpots += 1
-                    if neighbor == pellet or freeSpots >= 1: destination = neighbor
+                        if tree[neigh] not in snake: freeSpots += 1
+                    if freeSpots >= 1: destination = neighbor
             if destination is None: # No valid spots to move to
                 break # Snake dies of starvation
-            visited += [snake[0]]
             snake = [destination] + snake
+            visited.append(snake[0])
             snake[-1].setColor(OFF) # Turn the tail off then remove it
-            snake = snake[:-1]
+            snake.pop()
             for i in range(len(snake)):
                 f = i / len(snake)
                 if i == 0:

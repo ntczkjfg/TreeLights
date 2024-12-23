@@ -39,6 +39,7 @@ class Tree(neopixel.NeoPixel):
         self.z = self.coordinates[:,2]
         self.r = self.coordinates[:,3]
         self.a = self.coordinates[:,4]
+        self.i = np.arange(self.n)
         self.xMin = np.min(self.x)
         self.yMin = np.min(self.y)
         self.zMin = np.min(self.z)

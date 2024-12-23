@@ -107,27 +107,36 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
             fps(func, "pulsatingSphere")
         # rain
         elif effect == 12:
-            variant = rng.integers(0, 5)
+            variant = rng.integers(0, 6)
             if variant < 2: # Regular rain
                 color = [CYAN, BLUE][variant]
                 accumulationSpeed = 0
                 wind = rng.uniform(-6, 6)
                 speed = rng.uniform(3, 9)
+                fade = True
                 name = "rain"
             elif variant < 3: # Like the matrix
                 color = GREEN
                 accumulationSpeed = 0
                 wind = 0
                 speed = 3
+                fade = True
                 name = "matrixTrails"
+            elif variant < 4:
+                color = COLORS
+                wind = rng.uniform(-5, 5)
+                speed = rng.uniform(3, 9)
+                fade = rng.choice([True, False])
+                name = 'colorful_rain'
             else: # Accumulating snow
                 color = WHITE
                 accumulationSpeed = 0.03
                 wind = 0
                 speed = 2
+                fade = True
                 name = "accumulatingSnow"
             dropCount = rng.integers(8, 14)
-            func = lambda: rain(color = color, dropCount = dropCount, accumulationSpeed = accumulationSpeed, wind = wind, speed = speed, duration = 2*duration)
+            func = lambda: rain(color = color, dropCount = dropCount, accumulationSpeed = accumulationSpeed, wind = wind, speed = speed, fade = fade, duration = 2*duration)
             fps(func, name)
         # randomPlanes
         elif effect == 13:
@@ -354,10 +363,10 @@ def show(effects = None, duration = 30, insequence = False, start = 0):
             func = lambda: tree.cycle(variant = variant, backwards = backwards
                                       , speed = speed, indices = indices, duration = 3*duration)
             fps(func, "cycle")
-        # pizza
+        # pizza360
         elif effect == 28:
-            func = lambda: pizza()
-            fps(func, "pizza")
+            func = lambda: pizza360()
+            fps(func, "pizza360")
             sleep(duration)
         # traffic_cone
         elif effect == 29:

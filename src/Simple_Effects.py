@@ -114,6 +114,60 @@ def pizza():
             tree[i].setColor(RED)
     tree.show()
 
+# Makes the tree pizza
+def pizza360():
+    # Pepperonis are randomly generated, and rejected if poorly positioned
+    # Try to make this many - usually only accept 4-7 total
+    pepperoniCount = 100
+    r = .35
+    crustHeight = 0.15*tree.zMax
+    cheeseColor = [255, 140, 0]
+    crustColor = [64, 12, 0]
+    # Entire backside of the pizza plus the bottom part is crust
+    crust = tree.z < crustHeight
+    # Everywhere else is cheese
+    cheese = np.where(np.logical_not(crust))[0]
+    crust = np.where(crust)[0]
+    for i in crust:
+        tree[i].setColor(crustColor)
+    for i in cheese:
+        tree[i].setColor(cheeseColor)
+    pepperonis = []
+    # m and b used to calculate point on tree's surface from z and theta
+    m = tree.xMax / (tree[tree.sortedX[-1]].z - tree[tree.sortedZ[-1]].z)
+    b = -m * tree[tree.sortedZ[-2]].z
+    for _ in range(pepperoniCount):
+        z = crustHeight + r + rng.random()*(tree.zMax - crustHeight - r)
+        theta = rng.random() * 2 * PI
+        pepperoni = [(m*z+b)*np.cos(theta), (m*z+b)*np.sin(theta)] + [z] # On or near surface of tree
+        #add = True
+        #for oldPepperoni in pepperonis:
+        #    dist = ((oldPepperoni[0] - pepperoni[0])**2 + (oldPepperoni[1]-pepperoni[1])**2 + (oldPepperoni[2]-pepperoni[2])**2)**0.5
+        #    # Any closer and it can look like they're overlapping - ugly
+        #    if dist < 2.3*r:
+        #        add = False
+        #        break
+        #if not add: continue
+        add = True
+        dists = ((tree.x - pepperoni[0])**2 + (tree.y - pepperoni[1])**2 + (tree.z - pepperoni[2])**2)**0.5
+        toLight = tree.s & (dists < r)
+        big_r = tree.s & (0.6*r < dists) & (dists < 1.15*r)
+        toLight = np.where(toLight)[0]
+        big_r = np.where(big_r)[0]
+        for old_pepperoni in pepperonis:
+            common = np.intersect1d(old_pepperoni[4], big_r)
+            if common.size > 0:
+                add = False
+                break
+        if not add: continue
+        pepperonis.append([pepperoni[0], pepperoni[1], pepperoni[2], toLight, big_r])
+    if len(pepperonis) < 7:
+        return pizza360()
+    for pepperoni in pepperonis:
+        for i in pepperoni[3]:
+            tree[i].setColor(RED)
+    tree.show()
+
 # Displays a pokéball
 def pokeball():
     tree.clear(UPDATE = False)
