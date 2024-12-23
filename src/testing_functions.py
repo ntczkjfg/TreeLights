@@ -7,11 +7,11 @@ from simple_effects import color_builder
 # Has each light blink out its index number in binary
 def binary(sleep_length = .5, backwards = False):
     max_length = len(bin(tree.n - 1)[2:])
-    binary_reps = [(max_length * "0" + bin(i)[2:])[-max_length:] for i in range(tree.n)]
+    binary_reps = [(max_length * '0' + bin(i)[2:])[-max_length:] for i in range(tree.n)]
     if backwards: binary_reps = [rep[::-1] for rep in binary_reps]
     for d in range(max_length):
         for i in range(tree.n):
-            if binary_reps[i][d] == "0":
+            if binary_reps[i][d] == '0':
                 tree[i] = RED
             else:
                 tree[i] = GREEN
@@ -20,7 +20,7 @@ def binary(sleep_length = .5, backwards = False):
         tree.clear()
         sleep(sleep_length)
 
-# Sequentially shows all LEDs and their "connected" neighbors
+# Sequentially shows all LEDs and their 'connected' neighbors
 def connectivity_test():
     total_connections = 0
     lone_leds = 0
@@ -35,8 +35,8 @@ def connectivity_test():
         if connections == 2:
             lone_leds += 1
             pixel.set_color(RED)
-    print(total_connections, "connections among", tree.n, "with", lone_leds, "neighborless LEDs and", poorly_connected,
-          "poorly connected LEDs, and an average of", total_connections/tree.n, "connections per LED")
+    print(total_connections, 'connections among', tree.n, 'with', lone_leds, 'neighborless LEDs and', poorly_connected,
+          'poorly connected LEDs, and an average of', total_connections/tree.n, 'connections per LED')
     tree.show()
     input()
     for pixel in tree:
@@ -82,29 +82,29 @@ def light_slice(n, dim, width = 0.015):
 # Used to adjust a specific coordinate for a specific light
 def adjust_light(n, dim):
     global tree
-    dims = ["x", "y", "z"]
+    dims = ['x', 'y', 'z']
     if dim not in dims:
-        print("""Must specify "x", "y", or "z" dimension""")
+        print('Must specify "x", "y", or "z" dimension')
         return
     dim = dims.index(dim)
     if n < 0 or n >= tree.n:
-        print("Given n is outside of acceptable range.")
+        print('Given n is outside of acceptable range.')
         return
     while True:
         light_slice(n, dim)
-        print("Current " + str(dims[dim]) + "-coord: " + str(tree[n].coordinate[dim]))
-        delta = input("Increase (+) or decrease (-)? ")
-        if delta == "":
+        print('Current ' + str(dims[dim]) + '-coord: ' + str(tree[n].coordinate[dim]))
+        delta = input('Increase (+) or decrease (-)? ')
+        if delta == '':
             break
-        elif delta == "+":
+        elif delta == '+':
             delta = .02
-        elif delta == "-":
+        elif delta == '-':
             delta = -.02
         else:
             continue
         tree[n].coordinate[dim] += delta
-    save = input("Save (y/n)? ")
-    if save not in ["y", "Y"]:
+    save = input('Save (y/n)? ')
+    if save not in ['y', 'Y']:
         return
     coordinates = []
     for pixel in tree:
@@ -129,11 +129,11 @@ def max_framerate(duration = 10, variant = 0):
             pass
         tree.show()
     duration = time() - start_time
-    print(f"maxFramerate: {tree.frames} frames in {round(duration, 2)} seconds for {round(tree.frames/duration, 2)} fps")
+    print(f'maxFramerate: {tree.frames} frames in {round(duration, 2)} seconds for {round(tree.frames/duration, 2)} fps')
 
 # Divide the tree into halves to detect (and fix) misplaced lights
-def plane_test(sections = 20, variant ="y", start_at = 1):
-    property_index = ["x", "y", "z"].index(variant)
+def plane_test(sections = 20, variant ='y', start_at = 1):
+    property_index = ['x', 'y', 'z'].index(variant)
     min_val = [-1, -1, 0][property_index]
     increment = [2 / sections, 2 / sections, tree.z_max / sections][property_index]
     for boundary in range(start_at, sections + 1):
@@ -146,8 +146,8 @@ def plane_test(sections = 20, variant ="y", start_at = 1):
                 pixel.set_color(GREEN)
         tree.show()
         if boundary == sections: continue
-        x = input("Enter to continue, anything else to flash binary and fix")
-        if x == "":
+        x = input('Enter to continue, anything else to flash binary and fix')
+        if x == '':
             continue
         binary(sleep_length= 0.25)
         x = input()
@@ -158,9 +158,9 @@ def plane_test(sections = 20, variant ="y", start_at = 1):
     tree.clear()
 
 # Turns on lights one-by-one in the sorted directions
-def sorted_test(colors = None, speed = 1, variant ="z"):
+def sorted_test(colors = None, speed = 1, variant ='z'):
     pick_color = color_builder(colors)
-    index = ["i", "x", "y", "z", "r", "a"].index(variant)
+    index = ['i', 'x', 'y', 'z', 'r', 'a'].index(variant)
     order = tree.indices[index]
     color = pick_color()
     for count, i in enumerate(order, start = 1):

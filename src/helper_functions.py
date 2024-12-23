@@ -44,23 +44,23 @@ def contrast_color(old_color, pick_color):
 def run_from_csv(name, m = None):
     if m is None:
         m = [i for i in range(tree.led_count)]
-    path = "/home/pi/Desktop/TreeLights/CSVs/"
+    path = '/home/pi/Desktop/TreeLights/CSVs/'
     frames = []
-    with open(path + name + ".csv", "r") as f:
+    with open(path + name + '.csv', 'r') as f:
         time0 = time()
-        file = f.read().split("\n")
+        file = f.read().split('\n')
         file.pop(0) # First line is column headers, not used
         file.pop(-1) # File ends on a linebreak so final element is empty
         for frame_raw in file:
             frame = []
-            frame_raw = frame_raw.split(",")
+            frame_raw = frame_raw.split(',')
             for i in range(1, len(frame_raw), 3): # First element is frame number, not used.
                 color = [int(frame_raw[i+1]), # Subsequent elements are R, G, B values for each
                          int(frame_raw[i]), # LED in sequence, which are loaded here in G R B order
                          int(frame_raw[i+2])]
                 frame.append(color)
             frames.append(frame)
-        print(time() - time0, "seconds to process", len(file), "frames at", len(file) / (time() - time0), "fps.")
+        print(time() - time0, 'seconds to process', len(file), 'frames at', len(file) / (time() - time0), 'fps.')
     while True:
         time1 = time()
         for frame in frames:
@@ -71,7 +71,7 @@ def run_from_csv(name, m = None):
                     print(i)
                     raise Exception
             tree.show()
-        print(len(frames), "frames in", round(time()-time1, 3), "seconds")
+        print(len(frames), 'frames in', round(time()-time1, 3), 'seconds')
         break
 
 # Translates a point or array of points by x, y, and z, then rotates clockwise by zr,
@@ -128,10 +128,10 @@ def csv_show():
     tree.clear()
     for csv in Path('/home/pi/Desktop/TreeLights/CSVs/').iterdir():
         tree.clear()
-        input("Press enter to play " + csv)
+        input('Press enter to play ' + csv)
         try:
             run_from_csv(csv[:-4], B)
         except KeyboardInterrupt:
             pass
     tree.clear()
-    print("Done")
+    print('Done')

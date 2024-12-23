@@ -2,7 +2,7 @@
 # Increases framerate of the tree from about 20 fps to about 30 fps
 # Major changes were removing the sleep statement and only initializing _led_strip once instead of once per frame
 
-"""BCM283x NeoPixel Driver Class"""
+'''BCM283x NeoPixel Driver Class'''
 import _rpi_ws281x as ws
 import numpy as np
 
@@ -24,13 +24,13 @@ _buf = None
 
 
 def neopixel_write(gpio, buf):
-    """NeoPixel Writing Function"""
+    '''NeoPixel Writing Function'''
     global _led_strip  # we'll have one strip we initialize if it's not at first
     global channel
     global _buf
     
     if _led_strip is None:
-        print("Initializing LEDs... ", end = "")
+        print('Initializing LEDs... ', end = '')
         # Create a ws2811_t structure from the LED configuration.
         # Note that this structure will be created on the heap so you
         # need to be careful that you delete its memory by calling
@@ -67,13 +67,13 @@ def neopixel_write(gpio, buf):
         if resp != ws.WS2811_SUCCESS:
             if resp == -5:
                 raise RuntimeError(
-                    "NeoPixel support requires running with sudo, please try again!"
+                    'NeoPixel support requires running with sudo, please try again!'
                 )
             message = ws.ws2811_get_return_t_str(resp)
-            print("Failure!")
-            print(f"ws2811_init failed with code {resp} ({message})")
+            print('Failure!')
+            print(f'ws2811_init failed with code {resp} ({message})')
             return False
-        print("Success!")
+        print('Success!')
         return True
     # assign all colors!
     buf = buf.reshape(-1, 3).astype(np.int32)
@@ -93,5 +93,5 @@ def neopixel_write(gpio, buf):
     if resp != ws.WS2811_SUCCESS:
         message = ws.ws2811_get_return_t_str(resp)
         raise RuntimeError(
-            "ws2811_render failed with code {0} ({1})".format(resp, message)
+            'ws2811_render failed with code {0} ({1})'.format(resp, message)
         )

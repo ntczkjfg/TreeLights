@@ -3,11 +3,11 @@ import platform
 
 import numpy as np
 
-if platform.system() == "Windows":
+if platform.system() == 'Windows':
     import fake_tree as neopixel
     import fake_tree as board
     from fake_tree import neopixel_write
-elif platform.system() == "Linux":
+elif platform.system() == 'Linux':
     import board
     import neopixel
     from new_neopixel_write import neopixel_write
@@ -17,14 +17,14 @@ else:
 LED_PIN = board.D18
 
 class Tree(neopixel.NeoPixel):
-    """The Tree object.  Primary functions:  fill(), clear(), show(), setBrightness(), cycle().
-        self.[i] returns the color of the i-th LED and can also be used to set said color."""
+    '''The Tree object.  Primary functions:  fill(), clear(), show(), setBrightness(), cycle().
+        self.[i] returns the color of the i-th LED and can also be used to set said color.'''
     
     def __init__(self, coordinates):
         # Set this now so super class has access to it
         # Relevant if running on Windows, using FakeTree class
         self.coordinates = coordinates
-        super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = "RGB")
+        super().__init__(LED_PIN, len(coordinates), auto_write = False, pixel_order = 'RGB')
         self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
         self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
@@ -156,26 +156,26 @@ class Tree(neopixel.NeoPixel):
         # If initialization fails this falls back to self._transmit which should work for any supported hardware
         self.frames += 1
         if record and self.frame < max_frames:
-            name = "forMatt"
+            name = 'forMatt'
             self.record_to_csv(name)
     
     def record_to_csv(self, name):
-        path = "/home/pi/Desktop/TreeLights/CSVs/"
+        path = '/home/pi/Desktop/TreeLights/CSVs/'
         if self.frame == 0: # New file
             self.start_time = round(time(), 3)
-            with open(path + "template.csv", "r") as f:
+            with open(path + 'template.csv', 'r') as f:
                 template = f.read()
-            with open(path + name + ".csv", "w") as f:
+            with open(path + name + '.csv', 'w') as f:
                 f.write(template)
         if self.frame % 100 == 0:
-            print(self.frame, "frames in", time() - self.start_time, "seconds.")
-        data = str(self.frame) + ","
+            print(self.frame, 'frames in', time() - self.start_time, 'seconds.')
+        data = str(self.frame) + ','
         for i in range(self.n):
-            data += str(self._buffer[3*i]) + "," # R
-            data += str(self._buffer[3*i+1]) + "," # G
-            data += str(self._buffer[3*i+2]) + "," # B
-        with open(path + name + ".csv", "a") as f:
-            f.write(data[:-1] + "\n") # Remove last comma, add linefeed
+            data += str(self._buffer[3*i]) + ',' # R
+            data += str(self._buffer[3*i+1]) + ',' # G
+            data += str(self._buffer[3*i+2]) + ',' # B
+        with open(path + name + '.csv', 'a') as f:
+            f.write(data[:-1] + '\n') # Remove last comma, add linefeed
         self.frame += 1
     
     def __repr__(self):

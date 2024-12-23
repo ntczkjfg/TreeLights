@@ -254,7 +254,7 @@ def cylinder(colors = COLORS, duration = np.inf):
         pick_color = lambda: rng.integers(0, 256, 3)
     else:
         if type(colors[0]) != np.ndarray or len(colors) < 3:
-            print("Must supply at least 3 colors for this effect")
+            print('Must supply at least 3 colors for this effect')
             return
         pick_color = lambda: rng.choice(colors)
     def new_color(c1, c2):
@@ -347,7 +347,7 @@ def fade(colors = TRADITIONAL_COLORS, midline = .7, amplitude = .7, speed = 1.5,
     pick_color = color_builder(colors)
     amplitude = abs(amplitude)
     if midline < 0 or midline > 1 or amplitude > midline:
-        print("Midline must be between 0 and 1, amplitude cannot be larger than midline")
+        print('Midline must be between 0 and 1, amplitude cannot be larger than midline')
         return
     pre_fade_buffer = np.concatenate([pick_color() for _ in range(tree.n)])
     while time() - start_time < duration:
@@ -402,7 +402,7 @@ def falling_colors(colors=None, duration = np.inf):
 
 # Meant to imitate a fire
 def fire(duration = np.inf):
-    #return # Currently bugged, needs fixing - optimizing?
+    return # Currently bugged, needs fixing - optimizing?
     start_time = time()
     last_time = start_time
     one = np.array([75, 55, 0])
@@ -426,9 +426,7 @@ def fire(duration = np.inf):
                 if flame.z > 0.75*tree.z_max or (flame.z > 0.5 * tree.z_max and rng.random() < .6):
                     continue
                 flame.flag = 20
-                print(1)
                 flag_neighbors(flame)
-                print(2)
         smoke = np.where((tree.z > 0.65 * tree.z_max) & (rng.random(tree.n) < 0.1))[0]
         one_two_one = np.where(tree.z < 1.1*np.cos(0.5*PI*tree.x)*np.cos(0.5*PI*tree.y) + 0.3)[0]
         for i in smoke:
@@ -672,7 +670,7 @@ def random_planes(colors = COLORS, duration = np.inf):
         tree.show()
         tree.fade(halflife = factor, dt = dt)
 
-# Plays the game "snake"
+# Plays the game 'snake'
 def snake(cycles = np.inf, duration = np.inf):
     start_time = time()
     cycle = 0
@@ -710,24 +708,24 @@ def snake(cycles = np.inf, duration = np.inf):
                 break # Snake dies of starvation
             body = [destination] + body
             visited.append(body[0])
-            body[-1].setColor(OFF) # Turn the tail off then remove it
+            body[-1].set_color(OFF) # Turn the tail off then remove it
             body.pop()
             for i in range(len(body)):
                 f = i / len(body)
                 if i == 0:
-                    body[i].setColor(WHITE)
+                    body[i].set_color(WHITE)
                 else: # Rainbow colors
-                    body[i].setColor([max(510*(abs(f-0.5) - 1/6), 0), max(765*(-abs(f-1/3)+1/3), 0), max(765*(-abs(f-2/3)+1/3), 0)])
+                    body[i].set_color([max(510*(abs(f-0.5) - 1/6), 0), max(765*(-abs(f-1/3)+1/3), 0), max(765*(-abs(f-2/3)+1/3), 0)])
             pellet.set_color(WHITE)
             tree.show()
             sleep(0.05)
         for i in range(3): # Death animation
             for segment in body:
-                segment.setColor(RED)
+                segment.set_color(RED)
             tree.show()
             sleep(0.5)
             for segment in body:
-                segment.setColor(OFF)
+                segment.set_color(OFF)
             tree.show()
             sleep(0.5)
             cycle += 1
@@ -798,7 +796,7 @@ def spirals(colors=None
     last_time = start_time
     colors = np.array(colors)
     if variant**2 != 1: # variant determines which way the spirals slope.  1 = positive slope, -1 = negative slope
-        print("variant must be 1 or -1")
+        print('variant must be 1 or -1')
         return
     done = generate_instantly
     spiral_count = len(colors) # Number of spirals
@@ -883,7 +881,7 @@ def spotlight(colors = [WHITE, BLUE], duration = np.inf):
         color2 = rng.integers(0, 256, 3)
     else:
         if type(colors[0]) != np.ndarray:
-            print("Must supply at least two colors")
+            print('Must supply at least two colors')
             return
         color1, color2 = colors[0], colors[1]
     radius = 0.45 # Of the spotlight

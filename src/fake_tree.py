@@ -23,7 +23,7 @@ def neopixel_write(pin, buffer):
     return False
 
 class NeoPixel:
-    def __init__(self, pin, n, auto_write = False, pixel_order = "RGB"):
+    def __init__(self, pin, n, auto_write = False, pixel_order = 'RGB'):
         # Load point coordinates from file
         self.coordinates = np.array(self.coordinates)
         self.n = n
@@ -36,7 +36,7 @@ class NeoPixel:
         height = width#np.max(self.coordinates[:, 2])/2 * width
         self.fig = plt.figure(figsize=(width, height), dpi=100)
         # Set title bar
-        #self.fig.canvas.set_window_title("TreeLights")
+        #self.fig.canvas.set_window_title('TreeLights')
         # I don't want any red to show, but it helps me size the window
         self.fig.set_facecolor('red')
         

@@ -27,7 +27,7 @@ def candy_corn():
 
 # Displays images
 def display_image(file_name, mark_template = False):
-    path = "/home/pi/Desktop/TreeLights/Images/" + file_name
+    path = '/home/pi/Desktop/TreeLights/Images/' + file_name
     with Image.open(path) as im:
         img = im.load()
         tree.clear(update= False)
@@ -44,12 +44,12 @@ def display_image(file_name, mark_template = False):
                 if color != [237, 28, 36]:
                     tree[i].set_color(color)
         if mark_template:
-            im.save(path[:-4] + "_marked.png")
+            im.save(path[:-4] + '_marked.png')
     tree.show()
 
 # Displays images, but with perspective
 def display_image2(file_name, mark_template = False):
-    path = "/home/pi/Desktop/TreeLights/Images/" + file_name
+    path = '/home/pi/Desktop/TreeLights/Images/' + file_name
     eye = np.array([17, 0, 1.5])
     with Image.open(path) as im:
         img = im.load()
@@ -69,7 +69,7 @@ def display_image2(file_name, mark_template = False):
                 if color != [237, 28, 36]:
                     tree[i].set_color(color)
         if mark_template:
-            im.save(path[:-4] + "_marked.png")
+            im.save(path[:-4] + '_marked.png')
     tree.show()
 
 # Makes the tree pizza
