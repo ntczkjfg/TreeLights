@@ -2,6 +2,10 @@ import numpy as np
 
 # Simply pre-defined GRB colors, plus lists of colors that work well together
 
+__all__ = ['RED', 'ORANGE', 'YELLOW', 'GREEN', 'AQUA', 'CYAN', 'BLUE', 'PURPLE', 'PINK',
+           'WHITE', 'BLACK', 'ON', 'OFF', 'DIM',
+           'COLORS', 'TREE_COLORS', 'TRADITIONAL_COLORS', 'TREE_COLORS_2', 'RAINBOW']
+
 RED = np.array([255, 0, 0])
 ORANGE = np.array([255, 50, 0])
 YELLOW = np.array([255, 200, 0])
@@ -19,7 +23,7 @@ OFF = np.array([0, 0, 0])
 DIM = np.array([6, 6, 6])
 
 COLORS = np.array([WHITE, RED, ORANGE, YELLOW, GREEN, AQUA, CYAN, BLUE, PURPLE, PINK])
-TREECOLORS = np.array([RED, RED, GREEN, GREEN, YELLOW, BLUE])
-TRADITIONALCOLORS = np.array([RED, ORANGE, PINK, BLUE, GREEN])
-TREECOLORS2 = np.array([PINK, PINK, RED, GREEN, GREEN, YELLOW, BLUE/2])
+TREE_COLORS = np.array([RED, RED, GREEN, GREEN, YELLOW, BLUE])
+TRADITIONAL_COLORS = np.array([RED, ORANGE, PINK, BLUE, GREEN])
+TREE_COLORS_2 = np.array([PINK, PINK, RED, GREEN, GREEN, YELLOW, BLUE / 2])
 RAINBOW = np.array([RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, PURPLE, PINK])

@@ -6,12 +6,12 @@ plt.rcParams['toolbar'] = 'None'
 
 # via https://stackoverflow.com/questions/45729092/make-interactive-matplotlib-window-not-pop-to-front-on-each-update-windows-7
 # Used to stop window from always being on top
-def mypause(interval):
+def my_pause(interval):
     backend = plt.rcParams['backend']
     if backend in matplotlib.rcsetup.interactive_bk:
-        figManager = matplotlib._pylab_helpers.Gcf.get_active()
-        if figManager is not None:
-            canvas = figManager.canvas
+        fig_manager = matplotlib._pylab_helpers.Gcf.get_active()
+        if fig_manager is not None:
+            canvas = fig_manager.canvas
             if canvas.figure.stale:
                 canvas.draw()
             canvas.start_event_loop(interval)
@@ -99,7 +99,7 @@ class NeoPixel:
     
     # Update the display with any changes to the point colors
     def _transmit(self, buffer):
-        if self.setup == False:
+        if not self.setup:
             self.setup = True
             return True
         gamma = 1 / 2.2
@@ -110,12 +110,12 @@ class NeoPixel:
             self.update_point_sizes()
         self.scatter.set_facecolors(self.colors)
         plt.draw()
-        # I forget what the below code does but it doesn't work without it
+        # I forget what the below code does, but it doesn't work without it
         backend = plt.rcParams['backend']
         if backend in matplotlib.rcsetup.interactive_bk:
-            figManager = matplotlib._pylab_helpers.Gcf.get_active()
-            if figManager is not None:
-                figManager.canvas.start_event_loop(.00001)
+            fig_manager = matplotlib._pylab_helpers.Gcf.get_active()
+            if fig_manager is not None:
+                fig_manager.canvas.start_event_loop(.00001)
     
     # Change a color without updating it on the display
     def update_colors(self, colors):
@@ -137,7 +137,7 @@ class NeoPixel:
         min_dist = np.min(dists)
         normalized_dists = 1 - 2 * (dists - min_dist) / (max_dist - min_dist)
         # Have sizes range from 1 to 21
-        self.sizes = 25*normalized_dists+26
+        self.sizes = 25*normalized_dists + 26
         # Actually change the sizes
         self.scatter.set_sizes(self.sizes)
         # This only gets called when self.show() is, so no need to draw
@@ -159,9 +159,9 @@ class NeoPixel:
         zs = np.linspace(min_z, max_z, num_branches)
         thetas = np.linspace(0, 2*np.pi, num_branches)
         np.random.shuffle(thetas)
-        branchDirs = np.column_stack((zs, thetas))
+        branch_dirs = np.column_stack((zs, thetas))
         branch_points = []
-        for branch in branchDirs:
+        for branch in branch_dirs:
             z = branch[0]
             theta = branch[1]
             r = np.random.uniform(min_r, max_r) * (1 - z / max_z)

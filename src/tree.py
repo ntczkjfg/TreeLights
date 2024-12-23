@@ -1,12 +1,12 @@
-from time import sleep, time
+from time import time
 import platform
 
 import numpy as np
 
 if platform.system() == "Windows":
-    import FakeTree as neopixel
-    import FakeTree as board
-    from FakeTree import neopixel_write
+    import fake_tree as neopixel
+    import fake_tree as board
+    from fake_tree import neopixel_write
 elif platform.system() == "Linux":
     import board
     import neopixel
@@ -28,65 +28,65 @@ class Tree(neopixel.NeoPixel):
         self._pre_brightness_buffer = np.zeros(self._bytes, dtype=np.uint8)
         self.flags = np.full(self.n, None, dtype=object)
         self.pixels = []
-        polarCoordinates = []
+        polar_coordinates = []
         for i, coordinate in enumerate(coordinates):
             self.pixels.append(Pixel(tree = self, index = i, coordinate = np.array(coordinate)))
-            polarCoordinates.append([self.pixels[i].r, self.pixels[i].a])
-        self.coordinates = np.column_stack((self.coordinates, polarCoordinates))
-        totalDist = np.sum(np.sqrt(np.sum((self.coordinates[1:,:3] - self.coordinates[:-1,:3])**2, axis=1)))
+            polar_coordinates.append([self.pixels[i].r, self.pixels[i].a])
+        self.coordinates = np.column_stack((self.coordinates, polar_coordinates))
+        total_dist = np.sum(np.sqrt(np.sum((self.coordinates[1:,:3] - self.coordinates[:-1,:3])**2, axis=1)))
         self.x = self.coordinates[:,0]
         self.y = self.coordinates[:,1]
         self.z = self.coordinates[:,2]
         self.r = self.coordinates[:,3]
         self.a = self.coordinates[:,4]
         self.i = np.arange(self.n)
-        self.xMin = np.min(self.x)
-        self.yMin = np.min(self.y)
-        self.zMin = np.min(self.z)
-        self.rMin = np.min(self.r)
-        self.aMin = np.min(self.a)
-        self.xMax = np.max(self.x)
-        self.yMax = np.max(self.y)
-        self.zMax = np.max(self.z)
-        self.rMax = np.max(self.r)
-        self.aMax = np.max(self.a)
-        self.xRange = self.xMax - self.xMin
-        self.yRange = self.yMax - self.yMin
-        self.zRange = self.zMax - self.zMin
-        self.rRange = self.rMax - self.rMin
-        self.aRange = self.aMax - self.aMin
-        self.xMid = self.xMin + 0.5*self.xRange
-        self.yMid = self.yMin + 0.5*self.yRange
-        self.zMid = self.zMin + 0.5*self.zRange
-        self.rMid = self.rMin + 0.5*self.rRange
-        self.aMid = self.aMin + 0.5*self.aRange
+        self.x_min = np.min(self.x)
+        self.y_min = np.min(self.y)
+        self.z_min = np.min(self.z)
+        self.r_min = np.min(self.r)
+        self.a_min = np.min(self.a)
+        self.x_max = np.max(self.x)
+        self.y_max = np.max(self.y)
+        self.z_max = np.max(self.z)
+        self.r_max = np.max(self.r)
+        self.a_max = np.max(self.a)
+        self.x_range = self.x_max - self.x_min
+        self.y_range = self.y_max - self.y_min
+        self.z_range = self.z_max - self.z_min
+        self.r_range = self.r_max - self.r_min
+        self.a_range = self.a_max - self.a_min
+        self.x_mid = self.x_min + 0.5 * self.x_range
+        self.y_mid = self.y_min + 0.5 * self.y_range
+        self.z_mid = self.z_min + 0.5 * self.z_range
+        self.r_mid = self.r_min + 0.5 * self.r_range
+        self.a_mid = self.a_min + 0.5 * self.a_range
         
         # Used when recording effects to CSV
         self.frame = 0
-        self.startTime = 0
+        self.start_time = 0
         
         # Used to calculate fps
         self.frames = 0
         
         # Lists of LED indices sorted in various ways, plus determine surface LEDs
-        self.sortedI = np.arange(self.n) # Sorted by Index
-        self.sortedX = np.argsort(self.coordinates[:,0]) # Sorted by x-coordinate
-        self.sortedY = np.argsort(self.coordinates[:,1]) # Sorted by y-coordinate
-        self.sortedZ = np.argsort(self.coordinates[:,2]) # Sorted by z-coordinate
-        self.sortedR = np.argsort(self.coordinates[:,3]) # Sorted by radius
-        self.sortedA = np.argsort(self.coordinates[:,4]) # Sorted by angle (angle of 0 is along positive x-axis)
-        self.indices = np.array([self.sortedI, self.sortedX, self.sortedY, self.sortedZ, self.sortedR, self.sortedA])
+        self.sorted_i = np.arange(self.n) # Sorted by Index
+        self.sorted_x = np.argsort(self.coordinates[:, 0]) # Sorted by x-coordinate
+        self.sorted_y = np.argsort(self.coordinates[:, 1]) # Sorted by y-coordinate
+        self.sorted_z = np.argsort(self.coordinates[:, 2]) # Sorted by z-coordinate
+        self.sorted_r = np.argsort(self.coordinates[:, 3]) # Sorted by radius
+        self.sorted_a = np.argsort(self.coordinates[:, 4]) # Sorted by angle (angle of 0 is along positive x-axis)
+        self.indices = np.array([self.sorted_i, self.sorted_x, self.sorted_y, self.sorted_z, self.sorted_r, self.sorted_a])
         # Following four variables are used to identify LEDs that are on the surface of the tree
         # Assumes tree is conical - calculates linear equation for radius based on z-coordinate
         # Tries to account for outliers
-        maxR = self[self.sortedR[-self.n // 10]].r
-        maxZ = self[self.sortedZ[-8]].z
-        m = -maxR / maxZ
-        b = maxR
+        max_r = self[self.sorted_r[-self.n // 10]].r
+        max_z = self[self.sorted_z[-8]].z
+        m = -max_r / max_z
+        b = max_r
         self.s = self.r > (m*self.z + b - 0.05)
         coords_squared = np.sum(self.coordinates[:,:3]**2, axis = 1, keepdims = True)
-        avgDist = totalDist / (self.n - 1)
-        dists = (coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avgDist**2
+        avg_dist = total_dist / (self.n - 1)
+        dists = (coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avg_dist**2
         for i in range(self.n):
             neighbors = list(set(np.where(dists[i])[0].tolist()).union({i-1, i+1}).difference({-1, i, self.n}))
             self[i].neighbors = neighbors
@@ -96,8 +96,8 @@ class Tree(neopixel.NeoPixel):
         self.NEW_NEOPIXEL_WRITE = neopixel_write(self.pin, self._buffer)
     
     def cycle(self, indices = None, variant = 0, backwards = False, speed = 400, duration = 99999):
-        startTime = time()
-        lastTime = startTime
+        start_time = time()
+        last_time = start_time
         if speed == 0: return
         if speed < 0:
             speed *= -1
@@ -110,18 +110,18 @@ class Tree(neopixel.NeoPixel):
         else:
             a = 1
             b = 0
-        while (t := time()) - startTime < duration:
-            dt = t - lastTime
-            lastTime = t
-            firstCount = min(int(speed * dt), self.n)
-            if firstCount == 0:
-                lastTime = t - dt
+        while (t := time()) - start_time < duration:
+            dt = t - last_time
+            last_time = t
+            first_count = min(int(speed * dt), self.n)
+            if first_count == 0:
+                last_time = t - dt
                 continue
-            first = [self.pixels[indices[a*(i+b)]].color for i in range(firstCount)]
-            for i in range(self.n - firstCount):
-                self.pixels[indices[a*(i+b)]].setColor(self.pixels[indices[a*(i + firstCount + b)]].color)
-            for i in range(firstCount):
-                self.pixels[indices[a*(-(firstCount - i) + b)]].setColor(first[i])
+            first = [self.pixels[indices[a*(i+b)]].color for i in range(first_count)]
+            for i in range(self.n - first_count):
+                self.pixels[indices[a*(i+b)]].set_color(self.pixels[indices[a * (i + first_count + b)]].color)
+            for i in range(first_count):
+                self.pixels[indices[a*(-(first_count - i) + b)]].set_color(first[i])
             self.show()
     
     def fade(self, halflife = 0.25, dt = .05):
@@ -131,11 +131,11 @@ class Tree(neopixel.NeoPixel):
     def fill(self, color):
         self._buffer = np.tile(color, self.n).astype(np.uint8)
     
-    def clear(self, UPDATE = True, FLAGSONLY = False):
+    def clear(self, update = True, flags_only = False):
         self.flags = np.full(self.n, None, dtype=object)
-        if not FLAGSONLY:
+        if not flags_only:
             self._buffer = np.zeros(self._bytes, dtype=np.uint8)
-        if UPDATE and not FLAGSONLY: self.show()
+        if update and not flags_only: self.show()
     
     @property
     def _buffer(self):
@@ -147,34 +147,34 @@ class Tree(neopixel.NeoPixel):
             raise ValueError
         self._pre_brightness_buffer = np.array(buffer, dtype=np.uint8)
     
-    def show(self, record = False, maxFrames = 100000):
+    def show(self, record = False, max_frames = 100000):
         if self.NEW_NEOPIXEL_WRITE:
             neopixel_write(self.pin, self._buffer)
         else:
             self._transmit(bytearray(self._buffer.tobytes()))
         # neopixel_write is optimized for my tree (increases fps by about 50%), but may be hardware-specific
-        # If initilization fails this falls back to self._transmit which should work for any supported hardware
+        # If initialization fails this falls back to self._transmit which should work for any supported hardware
         self.frames += 1
-        if record and self.frame < maxFrames:
+        if record and self.frame < max_frames:
             name = "forMatt"
-            self.recordToCSV(name)
+            self.record_to_csv(name)
     
-    def recordToCSV(self, name):
-        PATH = "/home/pi/Desktop/TreeLights/CSVs/"
+    def record_to_csv(self, name):
+        path = "/home/pi/Desktop/TreeLights/CSVs/"
         if self.frame == 0: # New file
-            self.startTime = round(time(), 3)
-            with open(PATH + "template.csv", "r") as f:
+            self.start_time = round(time(), 3)
+            with open(path + "template.csv", "r") as f:
                 template = f.read()
-            with open(PATH + name + ".csv", "w") as f:
+            with open(path + name + ".csv", "w") as f:
                 f.write(template)
         if self.frame % 100 == 0:
-            print(self.frame, "frames in", time() - self.startTime, "seconds.")
+            print(self.frame, "frames in", time() - self.start_time, "seconds.")
         data = str(self.frame) + ","
         for i in range(self.n):
             data += str(self._buffer[3*i]) + "," # R
             data += str(self._buffer[3*i+1]) + "," # G
             data += str(self._buffer[3*i+2]) + "," # B
-        with open(PATH + name + ".csv", "a") as f:
+        with open(path + name + ".csv", "a") as f:
             f.write(data[:-1] + "\n") # Remove last comma, add linefeed
         self.frame += 1
     
@@ -194,7 +194,7 @@ class Tree(neopixel.NeoPixel):
     def __iter__(self):
         return iter(self.pixels)
     
-    def setColors(self, buffer):
+    def set_colors(self, buffer):
         if len(buffer) != self._bytes:
             raise ValueError
         self._buffer = np.array(buffer, dtype=np.uint8)
@@ -208,7 +208,7 @@ class Tree(neopixel.NeoPixel):
         self._brightness = value
         self.show()
 
-class Pixel():
+class Pixel:
     def __init__(self, tree, index, coordinate):
         self.tree = tree
         self.index = index
@@ -235,7 +235,7 @@ class Pixel():
     @property
     def color(self): return self.tree._pre_brightness_buffer[3*self.i:3*self.i + 3]
     @color.setter
-    def color(self, color): self.setColor(color)
+    def color(self, color): self.set_color(color)
     @property
     def x(self): return self.coordinate[0]
     @property
@@ -245,7 +245,7 @@ class Pixel():
     @property
     def surface(self): return self.tree.s[self.i]
     
-    def setColor(self, color):
+    def set_color(self, color):
         self.tree[self.i] = color
     
     def __repr__(self):

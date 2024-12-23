@@ -8,9 +8,9 @@ import board
 import neopixel
 from picamera import PiCamera
 
-LED_COUNT = 1200
+led_count = 1200
 LED_PIN = board.D18 # Pin 12 (Use 14 for ground)
-pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, auto_write = False)
+pixels = neopixel.NeoPixel(LED_PIN, led_count, auto_write = False)
 
 camera = PiCamera()
 camera.rotation = 270
@@ -101,7 +101,7 @@ def take_photos(save_photos = False,
                 path_j = path / str(j)
                 path_j.mkdir(parents = True, exist_ok = True)
             print('Taking photos... ', end = '')
-            for i in range(LED_COUNT):
+            for i in range(led_count):
                 if manual:
                     x = "'"
                     while x == "'":

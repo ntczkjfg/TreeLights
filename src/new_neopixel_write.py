@@ -25,7 +25,7 @@ _buf = None
 
 def neopixel_write(gpio, buf):
     """NeoPixel Writing Function"""
-    global _led_strip  # we'll have one strip we init if its not at first
+    global _led_strip  # we'll have one strip we initialize if it's not at first
     global channel
     global _buf
     
@@ -48,7 +48,7 @@ def neopixel_write(gpio, buf):
         channel = ws.ws2811_channel_get(_led_strip, LED_CHANNEL)
 
         # Initialize the channel in use
-        LED_STRIP = ws.WS2811_STRIP_RGB
+        led_strip = ws.WS2811_STRIP_RGB
         count = len(buf) // 3
 
         ws.ws2811_channel_t_count_set(
@@ -57,7 +57,7 @@ def neopixel_write(gpio, buf):
         ws.ws2811_channel_t_gpionum_set(channel, gpio._pin.id)
         ws.ws2811_channel_t_invert_set(channel, LED_INVERT)
         ws.ws2811_channel_t_brightness_set(channel, LED_BRIGHTNESS)
-        ws.ws2811_channel_t_strip_type_set(channel, LED_STRIP)
+        ws.ws2811_channel_t_strip_type_set(channel, led_strip)
 
         # Initialize the controller
         ws.ws2811_t_freq_set(_led_strip, LED_FREQ_HZ)
