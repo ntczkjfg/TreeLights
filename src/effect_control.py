@@ -133,6 +133,7 @@ def show(effects = None, duration = 30, in_sequence = False, start = 0):
                 name = 'matrix_trails'
             elif variant < 4: # Colorful rain
                 color = COLORS
+                accumulation_speed = 0
                 wind = rng.uniform(-5, 5)
                 speed = rng.uniform(3, 9)
                 do_fade = rng.choice([True, False])

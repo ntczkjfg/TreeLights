@@ -83,7 +83,7 @@ class Tree(neopixel.NeoPixel):
         max_z = self[self.sorted_z[-8]].z
         m = -max_r / max_z
         b = max_r
-        self.s = self.r > (m*self.z + b - 0.05)
+        self.s = (self.r + 0.1) > (m*self.z + b - 0.05)
         coords_squared = np.sum(self.coordinates[:,:3]**2, axis = 1, keepdims = True)
         avg_dist = total_dist / (self.n - 1)
         dists = (coords_squared + coords_squared.T - 2*np.dot(self.coordinates[:, :3], self.coordinates[:, :3].T)) < avg_dist**2
