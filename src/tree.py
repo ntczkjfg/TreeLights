@@ -4,9 +4,9 @@ import platform
 import numpy as np
 
 if platform.system() == 'Windows':
-    import fake_tree as neopixel
-    import fake_tree as board
-    from fake_tree import neopixel_write
+    import virtual_tree as neopixel
+    import virtual_tree as board
+    from virtual_tree import neopixel_write
 elif platform.system() == 'Linux':
     import board
     import neopixel
@@ -94,6 +94,11 @@ class Tree(neopixel.NeoPixel):
         # returns True if initialization succeeds, False otherwise
         # Falls back to hardware-agnostic version if it fails
         self.NEW_NEOPIXEL_WRITE = neopixel_write(self.pin, self._buffer)
+        if self.NEW_NEOPIXEL_WRITE == 25:
+            self.VIRTUAL_TREE = True
+            self.NEW_NEOPIXEL_WRITE = False
+        else:
+            self.VIRTUAL_TREE = False
     
     def cycle(self, indices = None, variant = 0, backwards = False, speed = 400, duration = 99999):
         start_time = time()
@@ -139,7 +144,7 @@ class Tree(neopixel.NeoPixel):
     
     @property
     def _buffer(self):
-        return (self._pre_brightness_buffer*self._brightness).astype(np.uint8)
+        return (self._pre_brightness_buffer*self.brightness).astype(np.uint8)
     
     @_buffer.setter
     def _buffer(self, buffer):
@@ -151,7 +156,10 @@ class Tree(neopixel.NeoPixel):
         if self.NEW_NEOPIXEL_WRITE:
             neopixel_write(self.pin, self._buffer)
         else:
-            self._transmit(bytearray(self._buffer.tobytes()))
+            if self.VIRTUAL_TREE:
+                self._transmit(self._buffer)
+            else:
+                self._transmit(bytearray(self._buffer.tobytes()))
         # neopixel_write is optimized for my tree (increases fps by about 50%), but may be hardware-specific
         # If initialization fails this falls back to self._transmit which should work for any supported hardware
         self.frames += 1
@@ -200,7 +208,7 @@ class Tree(neopixel.NeoPixel):
         self._buffer = np.array(buffer, dtype=np.uint8)
     
     @neopixel.NeoPixel.brightness.setter
-    def brightness(self, value: float):
+    def brightness(self, value):
         value = min(max(value, 0.0), 1.0)
         change = value - self._brightness
         if -0.001 < change < 0.001:

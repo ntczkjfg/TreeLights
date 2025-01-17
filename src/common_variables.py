@@ -51,4 +51,4 @@ def build_tree():
 
 if __name__ != '__main__':
     tree = build_tree()
-    tree.brightness = 0.4
+    tree.brightness = .4
