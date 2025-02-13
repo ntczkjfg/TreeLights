@@ -1,10 +1,8 @@
 import numpy as np
-import pygame
 
 """
 TODO
 Organize + comment code
-Connect everything to the rest of the tree code
 
 Connect more things to focal_point and focal_axis
     Azimuth rotation should subtract the focal point
@@ -20,13 +18,11 @@ Connect more things to focal_point and focal_axis
 
 class Graph:
     def __init__(self, perspective_point = [10, 0, 2.5], screen_dir = [-1, 0, 0],
-                 focal_axis = [0, 0, 1], width = 400, height = 800, screen_width = 0.3,
+                 width = 400, height = 800, screen_width = 0.3,
                  points = None, title = '3D Grapher', update_func = None):
         self._perspective_point = np.array(perspective_point)
         self._screen_dir = np.array(screen_dir)
         self._screen_dir = self._screen_dir / np.linalg.norm(self._screen_dir) # Make sure it's a unit vector
-        self.focal_axis = np.array(focal_axis) # Acts as 'up' direction, also axis about which rotations occur
-        self.focal_axis = self.focal_axis / np.linalg.norm(self.focal_axis)
         self.width = width
         self.height = height
         self.draw_axes = False
@@ -55,12 +51,21 @@ class Graph:
         self.matrix = np.eye(3)
         self.points_projected = False
         self.projected_points = self.project_points()
+
+    def restore_default_view(self):
+        self._perspective_point = self.initial_values['perspective_point']
+        self._screen_dir = self.initial_values['screen_dir']
+        self.screen_width = self.initial_values['screen_width']
+        self.find_screen()
+        self.matrix = np.eye(3)
+        self.points_projected = True
+        self.projected_points = self.project_points()
     
     def find_screen(self):
         width = self.screen_width / 2
         height = self.screen_height / 2
         
-        v = self.focal_axis - self.screen_dir[2] * self.screen_dir
+        v = np.array([0, 0, 1]) - self.screen_dir[2] * self.screen_dir
         v = v / np.linalg.norm(v)
         u = np.cross(self.screen_dir, v)
         u = u / np.linalg.norm(u)
@@ -150,13 +155,16 @@ class Graph:
         r /= 2
         self.angle_range = 2*np.atan2(-0.5*self.screen_width / np.linalg.norm(self.screen_dir) * (r - np.linalg.norm(self.perspective_point)), r)
     
-    def rotate(self, position):
+    def rotate(self, position, ctrl = False):
         if not self.rotating:
             return
         dx = position[0] - self.initial_position[0]
+        dy = position[1] - self.initial_position[1]
+        if ctrl:
+            # Holding ctrl only rotates about one axis - whichever the user is favoring
+            dx, dy = (dx, 0) if abs(dx) > abs(dy) else (0, dy)
         d_theta = dx / self.width * self.angle_range
         self.matrix = self.initial_matrix @ self.get_matrix(zr = d_theta)
-        dy = position[1] - self.initial_position[1]
         d_phi = dy / self.height * np.pi / 2
         self.matrix = self.matrix @ self.get_matrix(yr = d_phi)
         self.projected_points = self.project_points()
@@ -201,7 +209,7 @@ class Graph:
     def restore_azimuth(self):
         if self.rotating: # Fine to do this while panning
             return
-        z = self.focal_axis @ self.matrix
+        z = np.array([0, 0, 1]) @ self.matrix
         target = np.array([0, 0, 1])
         axis = np.cross(z, target)
         norm = np.linalg.norm(axis)
@@ -256,13 +264,12 @@ class Graph:
             matrix @= np.array([[1, 0, 0], [0, np.cos(xr), -np.sin(xr)], [0, np.sin(xr), np.cos(xr)]]).T
         return matrix
     
-    def resize(self):
+    def resize(self, new_width, new_height):
         pixels_per_unit = self.width / self.screen_width
-        width, height = self.screen.get_size()
-        d_width = width / self.width
-        d_height = height / self.height
-        self.width = width
-        self.height = height
+        d_width = new_width / self.width
+        d_height = new_height / self.height
+        self.width = new_width
+        self.height = new_height
         self.screen_width = self.width / pixels_per_unit
         self.screen_top *= d_width
         self.screen_left *= d_height
@@ -358,7 +365,9 @@ class Graph:
                 if buttons[1]: # Middle
                     pass
                 if buttons[2]: # Right
-                    self.rotate(event.pos)
+                    keys = pygame.key.get_pressed()
+                    ctrl = keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL] # Is ctrl being held down?
+                    self.rotate(event.pos, ctrl = ctrl)
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1: # Left
                     self.stop_panning()
@@ -367,16 +376,20 @@ class Graph:
                 elif event.button == 3: # Right
                     self.stop_rotating()
             elif event.type == pygame.WINDOWSIZECHANGED:
-                self.resize()
+                width, height = self.screen.get_size()
+                self.resize(width, height)
+            elif event.type == pygame.TEXTINPUT:
+                if event.text == 'r':
+                    self.restore_default_view()
             else:
                 pass
                 #print(f'{event.type} = {pygame.event.event_name(event.type)}')
         return True
-
+    
     def draw(self, points_projected):
         if points_projected:
             self.points_projected = False
-        self.screen.fill((255, 255, 255))
+        self.screen.fill((46, 46, 46))
         if self.draw_axes:
             pygame.draw.line(self.screen, (0, 0, 0), self.axes[0], self.axes[1], 2)
             pygame.draw.line(self.screen, (0, 0, 0), self.axes[2], self.axes[3], 2)
@@ -390,6 +403,8 @@ class Graph:
         pygame.display.flip()
     
     def run(self):
+        global pygame
+        import pygame
         pygame.init()
         self.screen = pygame.display.set_mode((self.width, self.height), pygame.RESIZABLE)
         pygame.display.set_caption(self.title)
@@ -401,6 +416,7 @@ class Graph:
         pygame.quit()
 
 def generate_cone(n = 1200):
+    rng = np.random.default_rng()
     points = []
     while len(points) < n:
         x = rng.uniform(-1, 1)
@@ -411,6 +427,7 @@ def generate_cone(n = 1200):
     return np.array(points)
 
 def generate_cylinder(n = 1200):
+    rng = np.random.default_rng()
     points = []
     while len(points) < n:
         theta = rng.uniform(0, 2*np.pi)
@@ -421,7 +438,6 @@ def generate_cylinder(n = 1200):
     return np.array(points)
 
 if __name__ == '__main__':
-    rng = np.random.default_rng()
     points = generate_cone()
     graph = Graph(points = points)
     graph.run()
