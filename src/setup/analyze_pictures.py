@@ -4,7 +4,7 @@ import numpy as np
 import json
 from PIL import Image
 
-cwd = Path.cwd()
+cwd = Path(__file__).parent
 parent_path = cwd.parent.parent
 TreePhotos_path = parent_path / 'TreePhotos'
 Trees_path = parent_path / 'Trees'

@@ -6,7 +6,7 @@ import numpy as np
 
 from tree import Tree
 
-cwd = Path.cwd()
+cwd = Path(__file__).parent
 parent_directory = cwd.parent
 trees_path = parent_directory / 'Trees'
 rng = np.random.default_rng()
